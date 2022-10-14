@@ -78,6 +78,11 @@ class Object:
         return cls(g.Sphere(radius=radius), **kwargs)
 
     @classmethod
+    def create_cylinder(cls, radius: float, length: float, **kwargs):
+        """Create a sphere with a given radius. """
+        return cls(g.Cylinder(radius=radius, height=length), **kwargs)
+
+    @classmethod
     def create_mesh(cls, path_to_mesh: Union[str, Path], scale: Union[float, List[float]] = 1., **kwargs):
         """ Create a object given by mesh geometry loaded by trimes. """
         mesh: trimesh.Trimesh = trimesh.load(path_to_mesh, force='mesh')

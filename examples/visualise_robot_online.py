@@ -6,17 +6,30 @@
 
 import time
 from pathlib import Path
-from robomeshcat.object import Object
-from robomeshcat.scene import Scene
+from robomeshcat import Object, Robot, Scene
 
 example_folder = Path(__file__).parent
+robot = Robot(urdf_path=example_folder.joinpath('franka_panda/panda.urdf'), )
+exit(1)
+scene = Scene()
+robot = Robot(urdf_path=example_folder.joinpath('franka_panda/panda.urdf'), )
+scene.add_robot(robot)
+# scene.render()
+with scene.animation(fps=1):
+    scene.render()
+    scene.render()
 
+time.sleep(5)
+#
+exit(1)
 scene = Scene()
 box1 = Object.create_cuboid(lengths=[0.3] * 3, color=[1, 0, 0], texture=example_folder.joinpath('texture.png'))
 scene.add_object(box1)
 scene.add_object(Object.create_sphere(0.1, name='green_obj', color=[0, 1, 0]))
+scene.add_object(Object.create_sphere(0.1, name='green_obj/green_obj2', color=[0, 1, 1]))
 scene.add_object(Object.create_mesh(path_to_mesh=example_folder.joinpath('spade.obj'), scale=1e-3, name='spade'))
 
+scene.objects['green_obj/green_obj2'].pos[1] = 0.3
 "Online - immediate rendering of the scene "
 # scene.render()
 # box1.pose[2, 3] = 2.
@@ -27,13 +40,13 @@ scene.add_object(Object.create_mesh(path_to_mesh=example_folder.joinpath('spade.
 "Render into the animation that is then shown in meshcat"
 with scene.animation(fps=1):
     scene.render()
-    box1.pose[2, 3] = 1.
+    # box1.pose[2, 3] = 1.
     scene.objects['green_obj'].pose[2, 3] = 0.5
     scene.render()
-    scene.camera_zoom = 0.4
-    scene.render()
-    scene.camera_zoom = 1.
-    scene.render()
+    # scene.camera_zoom = 0.4
+    # scene.render()
+    # scene.camera_zoom = 1.
+    # scene.render()
 
 # # Video recording
 # with scene.record_video(fps=1, filename='/tmp/vid.mp4'):
