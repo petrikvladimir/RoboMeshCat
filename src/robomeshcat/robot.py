@@ -34,7 +34,7 @@ class Robot:
         self.color = color
         self.opacity = opacity
         if mesh_folder_path is None:
-            mesh_folder_path = urdf_path.parent
+            mesh_folder_path = Path(urdf_path).parent
         self.model, col_model, vis_model = pin.buildModelsFromUrdf(str(urdf_path), str(mesh_folder_path))
         self.data, col_data, vis_data = pin.createDatas(self.model, col_model, vis_model)
         self.geom_model: pin.GeometryModel = col_model if show_collision_models else vis_model
@@ -52,7 +52,7 @@ class Robot:
         pin.updateGeometryPlacements(self.model, self.data, self.geom_model, self.geom_data)
         base = pin.SE3(self.pose)
         for g, f in zip(self.geom_model.geometryObjects, self.geom_data.oMg):  # type: pin.GeometryObject, pin.SE3
-            self.objects[f'{self.name}/{g.name}'].pose = base * f.homogeneous
+            self.objects[f'{self.name}/{g.name}'].pose = (base * f).homogeneous
 
     def _init_objects(self):
         """Fill in objects dictionary based on the data from pinocchio"""

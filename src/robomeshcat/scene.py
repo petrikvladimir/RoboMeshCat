@@ -4,7 +4,7 @@
 # Created on: 2022-10-11
 #     Author: Vladimir Petrik <vladimir.petrik@cvut.cz>
 #
-
+from copy import deepcopy
 from typing import Dict, Optional
 import itertools
 import meshcat
@@ -19,6 +19,7 @@ class Scene:
 
     def __init__(self, open=True, wait_for_open=True) -> None:
         super().__init__()
+        self._objects_cache: Dict[str, Object] = {}
         self.objects: Dict[str, Object] = {}
         self.robots: Dict[str, Robot] = {}
 
@@ -41,13 +42,16 @@ class Scene:
         if verbose and obj.name in self.objects:
             print('Object with the same name is already inside the scene, it will be replaced. ')
         self.objects[obj.name] = obj
+        self._objects_cache[obj.name] = deepcopy(obj)
         self.vis[obj.name].set_object(obj.geometry, obj.material)
+        self.vis[obj.name].set_transform(obj.pose)
 
     def remove_object(self, obj: Object, verbose: bool = True):
         if verbose and self._animation is not None:
             print('Removing object while animating is not allowed.')
             return
         self.objects.pop(obj.name)
+        self._objects_cache.pop(obj.name)
         self.vis[obj.name].delete()
 
     def add_robot(self, robot: Robot, verbose: bool = True):
@@ -77,18 +81,26 @@ class Scene:
 
     def _update_camera(self, vis_tree):
         vis_tree['/Cameras/default'].set_transform(self.camera_pose)
-        if self._animation is not None:
-            vis_tree['/Cameras/default/rotated/<object>'].set_property("zoom", "number", self.camera_zoom)
+        if np.all(np.isclose(self.camera_pose, np.eye(4))):
+            self._set_property_animation_safe(vis_tree["/Cameras/default/rotated/<object>"], 'position', [3, 1, 0])
         else:
-            vis_tree['/Cameras/default/rotated/<object>'].set_property("zoom", self.camera_zoom)
+            self._set_property_animation_safe(vis_tree["/Cameras/default/rotated/<object>"], 'position', [0, 0, 0])
+        self._set_property_animation_safe(vis_tree["/Cameras/default/rotated/<object>"], 'zoom', self.camera_zoom)
+
+    def _set_property_animation_safe(self, element, prop, value, prop_type='number'):
+        if self._animation is not None:
+            element.set_property(prop, prop_type, value)
+        else:
+            element.set_property(prop, value)
 
     def _update_visualization_tree(self, vis_tree):
         """Update all poses of the scene in the visualization tree of the meshcat viewer"""
         for robot in self.robots.values():
             robot.fk()
-        for k, o in self.objects.items():
+        for o, c in zip(self.objects.values(), self._objects_cache.values()):
             vis_tree[o.name].set_transform(o.pose)
-        # todo: add/remove on geometry/material change?
+            if not o.is_material_equal(c) or o.geometry.uuid != c.geometry.uuid:
+                self.add_object(o, verbose=False)
 
     def animation(self, fps: int = 30):
         return AnimationContext(scene=self, fps=fps)
@@ -108,6 +120,20 @@ class Scene:
     @camera_rot.setter
     def camera_rot(self, r):
         self.camera_pose[:3, :3] = r
+
+    def reset_camera(self):
+        self.camera_pose = np.eye(4)
+        self.camera_zoom = 1.
+
+    def __getitem__(self, item):
+        return self.objects[item] if item in self.objects else self.robots[item]
+
+    def clear(self):
+        """ Remove all the objects/robots from the scene """
+        for r in list(self.robots.values()):
+            self.remove_robot(r)
+        for o in list(self.objects.values()):
+            self.remove_object(o)
 
 
 class AnimationContext:

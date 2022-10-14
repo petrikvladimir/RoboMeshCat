@@ -9,9 +9,9 @@
 import itertools
 from pathlib import Path
 from typing import List, Optional, Union
+import trimesh
 import numpy as np
 import meshcat.geometry as g
-import trimesh
 
 
 class Object:
@@ -44,12 +44,16 @@ class Object:
     def material(self):
         if self.texture is not None:
             return g.MeshLambertMaterial(map=self.texture, opacity=self.opacity)
-        color = np.asarray(self.color)
+        color = np.asarray(self.color).copy()
         if not (np.any(color > 1) and color.dtype == np.int):
             color *= 255
         color = np.clip(color, 0, 255)
         return g.MeshLambertMaterial(color=int(color[0]) * 256 ** 2 + int(color[1]) * 256 + int(color[2]),
                                      opacity=self.opacity)
+
+    def is_material_equal(self, other):
+        return np.all(np.isclose(self.color, other.color)) and self.texture == other.texture and np.isclose(
+            self.opacity, other.opacity)
 
     @property
     def pos(self):
@@ -68,22 +72,29 @@ class Object:
         self.pose[:3, :3] = r
 
     @classmethod
-    def create_cuboid(cls, lengths: List[float], **kwargs):
+    def create_cuboid(cls, lengths: Union[List[float], float], pose=None, color: Optional[List[float]] = None,
+                      texture: Optional[Union[g.ImageTexture, Path]] = None, opacity: float = 1., name: str = None):
         """Create cuboid with a given size. """
-        return cls(g.Box(lengths=lengths), **kwargs)
+        return cls(g.Box(lengths=[lengths] * 3 if isinstance(lengths, (float, int)) else lengths), pose=pose,
+                   color=color, texture=texture, opacity=opacity, name=name)
 
     @classmethod
-    def create_sphere(cls, radius: float, **kwargs):
+    def create_sphere(cls, radius: float, pose=None, color: Optional[List[float]] = None,
+                      texture: Optional[Union[g.ImageTexture, Path]] = None, opacity: float = 1., name: str = None):
         """Create a sphere with a given radius. """
-        return cls(g.Sphere(radius=radius), **kwargs)
+        return cls(g.Sphere(radius=radius), pose=pose, color=color, texture=texture, opacity=opacity, name=name)
 
     @classmethod
-    def create_cylinder(cls, radius: float, length: float, **kwargs):
+    def create_cylinder(cls, radius: float, length: float, pose=None, color: Optional[List[float]] = None,
+                        texture: Optional[Union[g.ImageTexture, Path]] = None, opacity: float = 1., name: str = None):
         """Create a sphere with a given radius. """
-        return cls(g.Cylinder(radius=radius, height=length), **kwargs)
+        return cls(g.Cylinder(radius=radius, height=length), pose=pose, color=color, texture=texture, opacity=opacity,
+                   name=name)
 
     @classmethod
-    def create_mesh(cls, path_to_mesh: Union[str, Path], scale: Union[float, List[float]] = 1., **kwargs):
+    def create_mesh(cls, path_to_mesh: Union[str, Path], scale: Union[float, List[float]] = 1., pose=None,
+                    color: Optional[List[float]] = None, texture: Optional[Union[g.ImageTexture, Path]] = None,
+                    opacity: float = 1., name: str = None):
         """ Create a object given by mesh geometry loaded by trimes. """
         mesh: trimesh.Trimesh = trimesh.load(path_to_mesh, force='mesh')
         mesh.apply_scale(scale)
@@ -91,4 +102,5 @@ class Object:
             exp_obj = trimesh.exchange.obj.export_obj(mesh)
         except ValueError:
             exp_obj = trimesh.exchange.obj.export_obj(mesh, include_texture=False)
-        return cls(g.ObjMeshGeometry.from_stream(trimesh.util.wrap_as_stream(exp_obj)), **kwargs)
+        return cls(g.ObjMeshGeometry.from_stream(trimesh.util.wrap_as_stream(exp_obj)), pose=pose, color=color,
+                   texture=texture, opacity=opacity, name=name)
