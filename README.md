@@ -2,9 +2,9 @@
 
 Set of utilities for visualizing robots in web-based visualizer MeshCat.
 The whole library is object and robot centric allowing you to modify properties of instances rather than manipulating the visualization tree of the MeshCat itself. 
-The library allows you to easily generate videos like this:
+The library allows you to easily generate videos like this (source code is [here](examples/05_teaser.py)):
 
-_TBD: eye-cather video_
+![](docs/output.gif)
 
 # Installation
 
@@ -66,9 +66,6 @@ with scene.animation(fps=30):
     scene['obj'].pos[1] = 1.  # move hte object in the second frame
     scene.render()  # generate second frame
 ```
-
-# Planned features:
-
 ## Image generation
 ```python
 from robomeshcat import Scene
@@ -84,5 +81,3 @@ scene = Scene()
 with scene.video_recording(filename='/tmp/video.mp4', fps=30):
     pass
 ```
-
-## Text objects
