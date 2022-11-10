@@ -168,12 +168,10 @@ class Scene:
 class AnimationContext:
     """ Used to provide 'with animation' capability for the viewer. """
 
-    def __init__(self, scene: Scene, fps: int, name='a') -> None:
+    def __init__(self, scene: Scene, fps: int) -> None:
         super().__init__()
-        # todo: remove the name as it is not usefull at all
         self.scene: Scene = scene
         self.fps: int = fps
-        self.name = name
 
     def __enter__(self):
         self.scene._animation_frame_counter = itertools.count()
@@ -182,7 +180,7 @@ class AnimationContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Publish animation and clear all internal changes that were required to render to frame instead of online """
-        self.scene.vis[f'animations/{self.name}'].set_animation(self.scene._animation)
+        self.scene.vis[f'animations/animation'].set_animation(self.scene._animation)
         self.scene._animation = None
         self.scene._animation_frame_counter = None
 
