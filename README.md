@@ -73,7 +73,7 @@ with scene.animation(fps=30):
 ```python
 from robomeshcat import Scene
 scene = Scene()
-img = scene.render_image(w=640, h=480)
+img = scene.render_image()
 ```
 ## Video recording
 

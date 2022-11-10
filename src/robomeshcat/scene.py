@@ -4,12 +4,20 @@
 # Created on: 2022-10-11
 #     Author: Vladimir Petrik <vladimir.petrik@cvut.cz>
 #
+
+import itertools
+import time
+from pathlib import Path
+from tempfile import gettempdir
+
+import imageio
+import numpy as np
+from PIL import Image
 from copy import deepcopy
 from typing import Dict, Optional
-import itertools
+
 import meshcat
 from meshcat.animation import Animation
-import numpy as np
 
 from .object import Object
 from .robot import Robot
@@ -37,6 +45,9 @@ class Scene:
         " Variables used internally in case we are rendering to animation "
         self._animation: Optional[Animation] = None
         self._animation_frame_counter: Optional[itertools.count] = None
+
+        " Variables used internally to write frames of the video "
+        self._video_writer = None
 
     def add_object(self, obj: Object, verbose: bool = True):
         if verbose and obj.name in self.objects:
@@ -78,6 +89,8 @@ class Scene:
         else:
             self._update_camera(self.vis)
             self._update_visualization_tree(self.vis)
+            if self._video_writer is not None:
+                self._video_writer.append_data(np.array(self.render_image()))
 
     def _update_camera(self, vis_tree):
         vis_tree['/Cameras/default'].set_transform(self.camera_pose)
@@ -105,6 +118,19 @@ class Scene:
     def animation(self, fps: int = 30):
         return AnimationContext(scene=self, fps=fps)
 
+    def video_recording(self, filename=None, fps=30, directory=None, **kwargs):
+        """Return a context manager for video recording.
+        The output filename is given by:
+         1) filename parameter if it is not None
+         2) directory/timestemp.mp4 if filename is None and directory is not None
+         3) /tmp/timestemp if filename is None and directory is None
+         """
+        if filename is None:
+            if directory is None:
+                directory = gettempdir()
+            filename = Path(directory).joinpath(time.strftime("%Y%m%d_%H%M%S.mp4"))
+        return VideoContext(scene=self, fps=fps, filename=filename, **kwargs)
+
     @property
     def camera_pos(self):
         return self.camera_pose[:3, 3]
@@ -125,6 +151,9 @@ class Scene:
         self.camera_pose = np.eye(4)
         self.camera_zoom = 1.
 
+    def render_image(self) -> Image:
+        return self.vis.get_image()
+
     def __getitem__(self, item):
         return self.objects[item] if item in self.objects else self.robots[item]
 
@@ -141,6 +170,7 @@ class AnimationContext:
 
     def __init__(self, scene: Scene, fps: int, name='a') -> None:
         super().__init__()
+        # todo: remove the name as it is not usefull at all
         self.scene: Scene = scene
         self.fps: int = fps
         self.name = name
@@ -155,3 +185,18 @@ class AnimationContext:
         self.scene.vis[f'animations/{self.name}'].set_animation(self.scene._animation)
         self.scene._animation = None
         self.scene._animation_frame_counter = None
+
+
+class VideoContext:
+    def __init__(self, scene: Scene, fps: int, filename: str, **kwargs) -> None:
+        super().__init__()
+        self.scene = scene
+        self.video_writer = imageio.get_writer(uri=filename, fps=fps, **kwargs)
+
+    def __enter__(self):
+        self.scene._video_writer = self.video_writer
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.video_writer.close()
+        self.scene._video_writer = None
