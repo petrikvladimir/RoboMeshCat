@@ -87,9 +87,13 @@ class Object:
     @classmethod
     def create_cylinder(cls, radius: float, length: float, pose=None, color: Optional[List[float]] = None,
                         texture: Optional[Union[g.ImageTexture, Path]] = None, opacity: float = 1., name: str = None):
-        """Create a sphere with a given radius. """
-        return cls(g.Cylinder(radius=radius, height=length), pose=pose, color=color, texture=texture, opacity=opacity,
-                   name=name)
+        """Create a sphere with a given radius. The axis of rotational symmetry is aligned with the z-axis that is
+        common in robotics. To achieve that, we create a mesh of a cylinder instead of using meshcat cylinder that is
+        aligned with y-axis. """
+        mesh: trimesh.Trimesh = trimesh.creation.cylinder(radius=radius, height=length, sections=50)
+        exp_obj = trimesh.exchange.obj.export_obj(mesh)
+        return cls(g.ObjMeshGeometry.from_stream(trimesh.util.wrap_as_stream(exp_obj)), pose=pose, color=color,
+                   texture=texture, opacity=opacity, name=name)
 
     @classmethod
     def create_mesh(cls, path_to_mesh: Union[str, Path], scale: Union[float, List[float]] = 1., pose=None,
