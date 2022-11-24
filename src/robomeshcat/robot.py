@@ -17,13 +17,14 @@ from .object import Object
 class Robot:
     id_iterator = itertools.count()
 
-    def __init__(self, urdf_path: Union[Path, str], mesh_folder_path: Union[Path, str] = None,
+    def __init__(self, urdf_path: Union[Path, str], mesh_folder_path: Union[Path, str, List[Path], List[str]] = None,
                  show_collision_models: bool = False, name: str = None, color: Optional[List[float]] = None,
                  opacity: Optional[float] = None, pose=None) -> None:
         """
         Create a robot from URDF using pinocchio loader.
         :param urdf_path: path to the urdf file that contains robot description
-        :param mesh_folder_path: path to the directory of meshes, it's set to directory of urdf_path by default
+        :param mesh_folder_path: either a single path to the directory of meshes or list of paths to meshes directory,
+          it's set to directory of urdf_path file by default
         :param show_collision_models: weather to show collision model instead of visual model
         :param name: name of the robot used in meshcat tree
         :param color: optional color that overwrites one from the urdf
@@ -34,8 +35,12 @@ class Robot:
         self.color = color
         self.opacity = opacity
         if mesh_folder_path is None:
-            mesh_folder_path = Path(urdf_path).parent
-        self.model, col_model, vis_model = pin.buildModelsFromUrdf(str(urdf_path), str(mesh_folder_path))
+            mesh_folder_path = str(Path(urdf_path).parent)  # by default use the urdf parent directory
+        elif isinstance(mesh_folder_path, Path):
+            mesh_folder_path = str(mesh_folder_path)
+        elif isinstance(mesh_folder_path, list) and any((isinstance(path, Path) for path in mesh_folder_path)):
+            mesh_folder_path = [str(path) for path in mesh_folder_path]
+        self.model, col_model, vis_model = pin.buildModelsFromUrdf(str(urdf_path), mesh_folder_path)
         self.data, col_data, vis_data = pin.createDatas(self.model, col_model, vis_model)
         self.geom_model: pin.GeometryModel = col_model if show_collision_models else vis_model
         self.geom_data: pin.GeometryData = col_data if show_collision_models else vis_data
