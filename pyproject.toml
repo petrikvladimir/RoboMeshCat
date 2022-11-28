@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+
+[project]
+name = "robomeshcat"
+dynamic = ["version"]
+license = { text = "BSD-2-Clause" }
+authors = [
+    { name = "Vladimir Petrik", email = "vladimir.petrik@cvut.cz" },
+]
+description = "RoboMeshCat - Set of utilities for visualizing robots in web-based visualizer MeshCat."
+readme = "README.md"
+requires-python = ">=3.6"
+dependencies = ["pin", "meshcat", "trimesh", "imageio", "imageio-ffmpeg"]
+classifiers = [
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Framework :: Robot Framework",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/petrikvladimir/RoboMeshCat"
+"Bug Tracker" = "https://github.com/petrikvladimir/RoboMeshCat/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pycollada", # used to load 'dae' meshes
+]
+
