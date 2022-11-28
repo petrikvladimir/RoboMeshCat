@@ -1,10 +1,15 @@
 # RoboMeshCat
+[![](https://anaconda.org/conda-forge/robomeshcat/badges/version.svg)](https://anaconda.org/conda-forge/robomeshcat)
+[![PyPI version](https://badge.fury.io/py/robomeshcat.svg)](https://badge.fury.io/py/robomeshcat)
+![](https://anaconda.org/conda-forge/robomeshcat/badges/downloads.svg)
+[![License](https://img.shields.io/badge/License-BSD_2--Clause-orange.svg)](https://opensource.org/licenses/BSD-2-Clause)
 
-Set of utilities for visualizing robots in web-based visualizer MeshCat.
-The whole library is object and robot centric allowing you to modify properties of instances rather than manipulating the visualization tree of the MeshCat itself. 
+Set of utilities for visualizing robots in web-based visualizer [MeshCat](https://github.com/rdeits/meshcat-python).
+The whole library is object and robot centric allowing you to modify properties of instances rather than manipulating
+the visualization tree of the MeshCat itself.
 The library allows you to easily generate videos like this (source code is [here](examples/05_teaser.py)):
 
-![](docs/output.gif)
+![](https://raw.githubusercontent.com/petrikvladimir/robomeshcat/main/docs/output.gif)
 
 # Installation
 
@@ -12,6 +17,12 @@ The library allows you to easily generate videos like this (source code is [here
 
 ```bash
 conda install -c conda-forge robomeshcat
+```
+
+## From PyPI
+
+```bash
+pip install robomeshcat
 ```
 
 # Features
@@ -66,12 +77,16 @@ with scene.animation(fps=30):
     scene['obj'].pos[1] = 1.  # move hte object in the second frame
     scene.render()  # generate second frame
 ```
+
 ## Image generation
+
 ```python
 from robomeshcat import Scene
+
 scene = Scene()
 img = scene.render_image()
 ```
+
 ## Video recording
 
 ```python
