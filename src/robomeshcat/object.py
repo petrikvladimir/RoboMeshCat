@@ -100,7 +100,14 @@ class Object:
                     color: Optional[List[float]] = None, texture: Optional[Union[g.ImageTexture, Path]] = None,
                     opacity: float = 1., name: str = None):
         """ Create a object given by mesh geometry loaded by trimes. """
-        mesh: trimesh.Trimesh = trimesh.load(path_to_mesh, force='mesh')
+        try:
+            mesh: trimesh.Trimesh = trimesh.load(path_to_mesh, force='mesh')
+        except ValueError as e:
+            if str(e) == 'File type: dae not supported':
+                print('To load DAE meshes you need to install pycollada package via '
+                      '`conda install -c conda-forge pycollada`'
+                      ' or `pip install pycollada`')
+            raise
         mesh.apply_scale(scale)
         try:
             exp_obj = trimesh.exchange.obj.export_obj(mesh)
