@@ -99,7 +99,8 @@ class Object:
     def create_mesh(cls, path_to_mesh: Union[str, Path], scale: Union[float, List[float]] = 1., pose=None,
                     color: Optional[List[float]] = None, texture: Optional[Union[g.ImageTexture, Path]] = None,
                     opacity: float = 1., name: str = None):
-        """ Create a object given by mesh geometry loaded by trimes. """
+        """Create a mesh object by loading it from the :param path_to_mesh. Loading is performed by 'trimesh' library
+        internally."""
         try:
             mesh: trimesh.Trimesh = trimesh.load(path_to_mesh, force='mesh')
         except ValueError as e:
@@ -108,6 +109,12 @@ class Object:
                       '`conda install -c conda-forge pycollada`'
                       ' or `pip install pycollada`')
             raise
+        except Exception as e:
+            print(f'Loading of a mesh failed with message: \'{e}\'. '
+                  f'Trying to load with with \'ignore_broken\' but consider to fix the mesh located here:'
+                  f' \'{path_to_mesh}\'.')
+            mesh: trimesh.Trimesh = trimesh.load(path_to_mesh, force='mesh', ignore_broken=True)
+
         mesh.apply_scale(scale)
         try:
             exp_obj = trimesh.exchange.obj.export_obj(mesh)
