@@ -42,6 +42,8 @@ class Object:
 
     @property
     def material(self):
+        if isinstance(self.geometry, g.Object):
+            return None
         if self.texture is not None:
             return g.MeshLambertMaterial(map=self.texture, opacity=self.opacity)
         color = np.asarray(self.color).copy()
