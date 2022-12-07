@@ -63,8 +63,8 @@ class Object:
         self._vis = vis[self.name]
 
     def _assert_vis(self):
-        if self._vis is None:
-            print('The properties of the object cannot be modified unless object is added to the scene.')
+        assert self._vis is not None, 'The properties of the object cannot be modified unless object is added to the ' \
+                                      'scene.'
 
     def _set_object(self):
         """Create an object in meshcat and set all the initial properties. """

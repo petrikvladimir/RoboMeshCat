@@ -6,12 +6,12 @@
 #
 import itertools
 from pathlib import Path
-from typing import Union, Dict, Optional, List
+from typing import Union, Dict, Optional, List, Tuple
 
 import numpy as np
 import pinocchio as pin
 
-from .object import Object
+from .object import Object, ArrayWithCallbackOnSetItem
 
 
 class Robot:
@@ -32,72 +32,142 @@ class Robot:
         """
         super().__init__()
         self.name = f'robot{next(self.id_iterator)}' if name is None else name
-        self.color = color
-        self.opacity = opacity
+        self._model, self._data, self._geom_model, self._geom_data = self._build_model_from_urdf(
+            urdf_path, mesh_folder_path, show_collision_models
+        )
+
+        """ Adjustable properties """
+        self._pose = ArrayWithCallbackOnSetItem(np.eye(4) if pose is None else pose, cb=self._fk)
+        self._q = ArrayWithCallbackOnSetItem(pin.neutral(self._model), cb=self._fk)
+        self._color = ArrayWithCallbackOnSetItem(Object._color_from_input(color), cb=self._color_reset_on_set_item)
+        self._opacity = opacity
+        self._visible = True
+
+        """Set of objects used to visualize the links."""
+        self._objects: Dict[str, Object] = {}
+        self._init_objects(overwrite_color=color is not None)
+
+    @staticmethod
+    def _build_model_from_urdf(urdf_path, mesh_folder_path, show_collision_models) -> Tuple[
+        pin.Model, pin.Data, pin.GeometryModel, pin.GeometryData]:
+        """Use pinocchio to load models and datas used for the visualizer."""
         if mesh_folder_path is None:
             mesh_folder_path = str(Path(urdf_path).parent)  # by default use the urdf parent directory
         elif isinstance(mesh_folder_path, Path):
             mesh_folder_path = str(mesh_folder_path)
         elif isinstance(mesh_folder_path, list) and any((isinstance(path, Path) for path in mesh_folder_path)):
             mesh_folder_path = [str(path) for path in mesh_folder_path]
-        self.model, col_model, vis_model = pin.buildModelsFromUrdf(str(urdf_path), mesh_folder_path)
-        self.data, col_data, vis_data = pin.createDatas(self.model, col_model, vis_model)
-        self.geom_model: pin.GeometryModel = col_model if show_collision_models else vis_model
-        self.geom_data: pin.GeometryData = col_data if show_collision_models else vis_data
 
-        self.pose = np.eye(4) if pose is None else pose
-        self._q = pin.neutral(self.model)
-        self.objects: Dict[str, Object] = {}
-        self._init_objects()
-        self.fk()
+        model, col_model, vis_model = pin.buildModelsFromUrdf(str(urdf_path), mesh_folder_path)
+        data, col_data, vis_data = pin.createDatas(model, col_model, vis_model)
+        geom_model: pin.GeometryModel = col_model if show_collision_models else vis_model
+        geom_data: pin.GeometryData = col_data if show_collision_models else vis_data
+        return model, data, geom_model, geom_data
 
-    def fk(self):
+    def _fk(self):
         """Compute ForwardKinematics and update the objects poses."""
-        pin.forwardKinematics(self.model, self.data, self._q)
-        pin.updateGeometryPlacements(self.model, self.data, self.geom_model, self.geom_data)
-        base = pin.SE3(self.pose)
-        for g, f in zip(self.geom_model.geometryObjects, self.geom_data.oMg):  # type: pin.GeometryObject, pin.SE3
-            self.objects[f'{self.name}/{g.name}'].pose = (base * f).homogeneous
+        pin.forwardKinematics(self._model, self._data, self._q)
+        pin.updateGeometryPlacements(self._model, self._data, self._geom_model, self._geom_data)
+        base = pin.SE3(self._pose)
+        for g, f in zip(self._geom_model.geometryObjects, self._geom_data.oMg):  # type: pin.GeometryObject, pin.SE3
+            self._objects[f'{self.name}/{g.name}'].pose = (base * f).homogeneous
 
-    def _init_objects(self):
+    def _init_objects(self, overwrite_color=False):
         """Fill in objects dictionary based on the data from pinocchio"""
-        for g in self.geom_model.geometryObjects:  # type: pin.GeometryObject
+        pin.forwardKinematics(self._model, self._data, self._q)
+        pin.updateGeometryPlacements(self._model, self._data, self._geom_model, self._geom_data)
+        base = pin.SE3(self._pose)
+        for g, f in zip(self._geom_model.geometryObjects, self._geom_data.oMg):  # type: pin.GeometryObject, pin.SE3
             kwargs = dict(
                 name=f'{self.name}/{g.name}',
-                color=g.meshColor[:3] if self.color is None else self.color,
-                opacity=g.meshColor[3] if self.opacity is None else self.opacity,
-                texture=g.meshTexturePath if g.meshTexturePath else None
+                color=g.meshColor[:3] if not overwrite_color else self._color,
+                opacity=g.meshColor[3] if self._opacity is None else self._opacity,
+                texture=g.meshTexturePath if g.meshTexturePath else None,
+                pose=(base * f).homogeneous
             )
             if g.meshPath == 'BOX':
-                self.objects[kwargs['name']] = Object.create_cuboid(lengths=2 * g.geometry.halfSide, **kwargs)
+                self._objects[kwargs['name']] = Object.create_cuboid(lengths=2 * g.geometry.halfSide, **kwargs)
             elif g.meshPath == 'SPHERE':
-                self.objects[kwargs['name']] = Object.create_sphere(radius=g.geometry.radius, **kwargs)
+                self._objects[kwargs['name']] = Object.create_sphere(radius=g.geometry.radius, **kwargs)
             elif g.meshPath == 'CYLINDER':
                 r, l = g.geometry.radius, 2 * g.geometry.halfLength
-                self.objects[kwargs['name']] = Object.create_cylinder(radius=r, length=l, **kwargs)
+                self._objects[kwargs['name']] = Object.create_cylinder(radius=r, length=l, **kwargs)
             else:
-                self.objects[kwargs['name']] = Object.create_mesh(path_to_mesh=g.meshPath, scale=g.meshScale, **kwargs)
+                self._objects[kwargs['name']] = Object.create_mesh(path_to_mesh=g.meshPath, scale=g.meshScale, **kwargs)
+
+    """ === Methods for adjusting the base pose of the robot. ==="""
+
+    @property
+    def pose(self):
+        return self._pose
+
+    @pose.setter
+    def pose(self, v):
+        self._pose[:, :] = v
 
     @property
     def pos(self):
-        return self.pose[:3, 3]
+        return self._pose[:3, 3]
 
     @pos.setter
     def pos(self, p):
-        self.pose[:3, 3] = p
+        self._pose[:3, 3] = p
 
     @property
     def rot(self):
-        return self.pose[:3, :3]
+        return self._pose[:3, :3]
 
     @rot.setter
     def rot(self, r):
-        self.pose[:3, :3] = r
+        self._pose[:3, :3] = r
 
     def __getitem__(self, key):
-        jid = self.model.getJointId(key) if isinstance(key, str) else key
+        jid = self._model.getJointId(key) if isinstance(key, str) else key
         return self._q[jid]
 
     def __setitem__(self, key, value):
-        jid = self.model.getJointId(key) if isinstance(key, str) else key
+        jid = self._model.getJointId(key) if isinstance(key, str) else key
         self._q[jid] = value
+
+    """=== Control of the object visibility ==="""
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, v):
+        self._visible = bool(v)
+        for o in self._objects.values():
+            o.visible = self._visible
+
+    def hide(self):
+        self.visible = False
+
+    def show(self):
+        self.visible = True
+
+    """=== Control of the object transparency ==="""
+
+    @property
+    def opacity(self):
+        return self._opacity
+
+    @opacity.setter
+    def opacity(self, v):
+        self._opacity = v
+        for o in self._objects.values():
+            o.opacity = self._opacity
+
+    @property
+    def color(self):
+        return self._color
+
+    @color.setter
+    def color(self, v):
+        self._color = Object._color_from_input(v)
+        self._color_reset_on_set_item()
+
+    def _color_reset_on_set_item(self):
+        for o in self._objects.values():
+            o.color = self._color

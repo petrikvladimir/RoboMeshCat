@@ -66,21 +66,21 @@ class Scene:
             return
         obj._delete_object()
         self.objects.pop(obj.name)
-    #
-    # def add_robot(self, robot: Robot, verbose: bool = True):
-    #     if verbose and robot.name in self.robots:
-    #         print('Robot with the same name is already inside the scene, it will be replaced. ')
-    #     self.robots[robot.name] = robot
-    #     for obj in robot.objects.values():
-    #         self.add_object(obj, verbose=verbose)
-    #
-    # def remove_robot(self, robot: Robot, verbose: bool = True):
-    #     if verbose and self._animation is not None:
-    #         print('Removing robots while animating is not allowed.')
-    #         return
-    #     self.robots.pop(robot.name)
-    #     for obj in robot.objects.values():
-    #         self.remove_object(obj, verbose=verbose)
+
+    def add_robot(self, robot: Robot, verbose: bool = True):
+        if verbose and robot.name in self.robots:
+            print('Robot with the same name is already inside the scene, it will be replaced. ')
+        self.robots[robot.name] = robot
+        for obj in robot._objects.values():
+            self.add_object(obj, verbose=verbose)
+
+    def remove_robot(self, robot: Robot, verbose: bool = True):
+        if verbose and self._animation is not None:
+            print('Removing robots while animating is not allowed.')
+            return
+        self.robots.pop(robot.name)
+        for obj in robot._objects.values():
+            self.remove_object(obj, verbose=verbose)
 
     def render(self):
         """Render current scene either to browser, video or to the next frame of the animation. """
@@ -219,7 +219,6 @@ class AnimationContext:
         """Publish animation and clear all internal changes that were required to render to frame instead of online """
         self.scene.vis[f'animations/animation'].set_animation(self.scene._animation)
         self.scene._close_animation()
-
 
 # class VideoContext:
 #     def __init__(self, scene: Scene, fps: int, filename: str, **kwargs) -> None:
