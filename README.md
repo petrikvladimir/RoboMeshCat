@@ -1,4 +1,5 @@
 # RoboMeshCat
+
 [![](https://anaconda.org/conda-forge/robomeshcat/badges/version.svg)](https://anaconda.org/conda-forge/robomeshcat)
 [![PyPI version](https://badge.fury.io/py/robomeshcat.svg)](https://badge.fury.io/py/robomeshcat)
 ![](https://anaconda.org/conda-forge/robomeshcat/badges/downloads.svg)
@@ -25,74 +26,70 @@ conda install -c conda-forge robomeshcat
 pip install robomeshcat
 ```
 
-# Features
+# About
 
-## Object and robot centric rendering
-
-- supported objects shapes are sphere, cuboid, cylinder, and mesh; you can control:
-    - color
-    - transparency/opacity
-    - pose
-- robots can be loaded from URDF (internally represented by [pinocchio](https://github.com/stack-of-tasks/pinocchio)
-  library) and you can control:
-    - color
-    - transparency/opacity
-    - pose of the base
-    - configuration, i.e. joint values
+This library allows you to visualize and animate objects and robots in web browser.
+Compared to [MeshCat](https://github.com/rdeits/meshcat-python) library, on which we build, our library is
+object-oriented allowing you to modify the properties of individual objects, for example:
 
 ```python
-from robomeshcat import Object, Robot, Scene
-from example_robot_data.robots_loader import PandaLoader
-from pathlib import Path
-
-"Create a scene that stores all objects and robots and has rendering capability"
-scene = Scene()
-obj = Object.create_sphere(radius=0.1, name='red_sphere', opacity=0.5, color=[1., 0., 0.])
-scene.add_object(obj)
-robot = Robot(urdf_path=PandaLoader().df_path, mesh_folder_path=Path(PandaLoader().model_path).parent.parent)
-scene.add_robot(robot)
-"Render the initial scene"
-scene.render()
-"Update object position in x-axis and robot first joint"
-obj.pos[0] = 1.  # or scene['red_sphere'].pos[0] = 1.
-robot[0] = 3.14
-scene.render()
+o = Object.create_sphere(radius=0.2)
+o.pos[2] = 2.  # modify position
+o.opacity = 0.3  # modify transparency
+o.color[0] = 1.  # modify red channel of the color
+o.hide()  # hide the object, i.e. set o.visible = False
 ```
 
-## Animation rendering
-
-- you can easily animate properties:
-    - poses of the objects
-    - configurations and poses of robots
-    - camera pose and zoom
-- animation is published automatically after 'with' command finishes/closes
+In addition to objects, it allows you to easily create and manipulate robots (loaded from `URDF` file):
 
 ```python
-from robomeshcat import Scene
-
-scene = Scene()
-with scene.animation(fps=30):
-    scene.render()  # generate first frame
-    scene.camera_zoom = 0.4  # set the camera zoom, you can also set position and rotation of camera
-    scene['obj'].pos[1] = 1.  # move hte object in the second frame
-    scene.render()  # generate second frame
+r = Robot(urdf_path='robot.urdf')
+r[0] = np.pi  # set the value of the first joint
+r['joint5'] = 0  # set the value of the joint named 'joint5' 
+r.pos = [0, 0, 0]  # set the base pose of the robot
+r.color, r.opacity, r.visibility, r.rot = ...  # change the color, opacity, visibility, or rotation
 ```
 
-## Image generation
+All changes will be displayed immediately in the browser, that we call 'online' rendering.
+By default, you can rotate the camera view with your mouse.
+However, our library allows you to control the camera from the code as well through the `Scene` object, that is the main
+point for visualization:
 
 ```python
-from robomeshcat import Scene
-
 scene = Scene()
-img = scene.render_image()
+scene.add_object(o)  # add object 'o' into the scene, that will display it
+scene.add_robot(r)  # add robot 'r' into the scene, that will display it
+scene.camera_pos = [1, 1, 1]  # set camera position
+scene.camera_pos[2] = 2  # change height of the camera
+scene.camera_zoom = 2  # zoom in
+scene.reset_camera()  # reset camera such that you can control it with your mouse again
 ```
 
-## Video recording
+For complete examples of object and robot interface see our two examples: [01_object.py](examples/01_objects.py)
+and [02_robots.py](examples/02_robots.py).
+
+## Animation
+
+This library allows you to animate all the properties of the objects and robots (e.g. position, robot configuration,
+color,opacity) inside the browser (from which you can replay, slow-down, etc.). Simply use:
 
 ```python
-from robomeshcat import Scene
-
 scene = Scene()
-with scene.video_recording(filename='/tmp/video.mp4', fps=30):
-    pass
+scene.add_object(o)
+
+with scene.animation(fps=25):
+    o.pos[2] = 2.
+    scene.render()  # create a first frame of the animation, with object position z-axis set to 2.
+    o.pos[2] = 0.
+    scene.render()  # create a second frame of the animation with object on the ground
 ```
+
+You can also store the animation into the video, using the same principle:
+
+```python
+with scene.video_recording(filename='video.mp4', fps=25):
+    scene.render()
+```
+
+See our examples on [Animation](examples/03_animation.py) and [Image and video](examples/04_image_and_video.py).
+
