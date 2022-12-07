@@ -85,7 +85,7 @@ class Object:
         """Set property of the object, handle animation frames set_property internally."""
         self._assert_vis()
         element = self._vis if subpath is None else self._vis[subpath]
-        if isinstance(self._vis, AnimationFrameVisualizer):
+        if self._is_animation():
             element.set_property(key, prop_type, value)
         else:
             element.set_property(key, value)
@@ -174,6 +174,14 @@ class Object:
             self._set_property('material.color', value=self.color.tolist(), prop_type='vector')
         else:
             self._set_object()  # only way how to update color online is to reset the object
+
+    def _reset_all_properties(self):
+        """Reset all properties in the meshcat, i.e. call setters with the same variable. Useful for the animation
+         frames. """
+        self.pose = self.pose
+        self.color = self.color
+        self.opacity = self.opacity
+        self.visible = self.visible
 
     """=== Helper functions to create basic primitives ==="""
 
