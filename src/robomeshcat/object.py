@@ -47,10 +47,10 @@ class Object:
         self._geometry = geometry
 
     @staticmethod
-    def _color_from_input(clr: Optional[Union[List[float], np.ndarray]]):
+    def _color_from_input(clr: Optional[Union[List[float], np.ndarray]], default=None):
         """Modify input color to always be represented by numpy array with values from 0 to 1 """
         if clr is None:
-            clr = np.random.uniform(0, 1, 3)
+            clr = np.random.uniform(0, 1, 3) if default is None else default
         clr = np.asarray(clr)
         assert clr.shape == (3,)
         if np.any(clr > 1) and clr.dtype == np.int:

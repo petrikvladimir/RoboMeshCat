@@ -35,8 +35,7 @@ class Scene:
             self.vis.open()
         if wait_for_open:
             self.vis.wait()
-        self.vis["/Background"].set_property("top_color", [1] * 3)
-        self.vis["/Background"].set_property("bottom_color", [1] * 3)
+        self.set_background_color()
 
         "Variables used to control the camera"
         self._camera_vis = self.vis["/Cameras/default"]
@@ -120,6 +119,13 @@ class Scene:
             self.remove_robot(r)
         for o in list(self.objects.values()):
             self.remove_object(o)
+
+    def set_background_color(self, top_color=None, bottom_color=None):
+        """Set background color of the visualizer. Use white background by default."""
+        clr = Object._color_from_input(top_color, default=np.ones(3))
+        self.vis["/Background"].set_property("top_color", clr.tolist())
+        clr = Object._color_from_input(bottom_color, default=clr)
+        self.vis["/Background"].set_property("bottom_color", clr.tolist())
 
     """=== The following set of functions handle animations ==="""
 
