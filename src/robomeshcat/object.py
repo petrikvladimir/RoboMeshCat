@@ -12,6 +12,7 @@ from typing import List, Optional, Union
 import trimesh
 import numpy as np
 import meshcat.geometry as g
+from meshcat.animation import AnimationFrameVisualizer
 
 
 class Object:
@@ -33,43 +34,148 @@ class Object:
         """
         super().__init__()
         self.name = f'obj{next(self.id_iterator)}' if name is None else name
-        self.pose = np.eye(4) if pose is None else pose
-        self.geometry = geometry
+        self._vis = None  # either a visualization tree or the frame of the animation, is set by the scene
 
-        self.color = color if color is not None else np.random.uniform(0, 1, 3)
-        self.texture = g.ImageTexture(g.PngImage.from_file(texture)) if isinstance(texture, (Path, str)) else texture
-        self.opacity = opacity
+        "List of properties that could be updated for all objects"
+        self._pose = ArrayWithCallbackOnSetItem(np.eye(4) if pose is None else pose, cb=self._set_transform)
+        self._color = ArrayWithCallbackOnSetItem(self._color_from_input(color), cb=self._color_reset_on_set_item)
+        self._opacity = opacity
+        self._visible = True
+
+        "Not updatable properties."
+        self._texture = g.ImageTexture(g.PngImage.from_file(texture)) if isinstance(texture, (Path, str)) else texture
+        self._geometry = geometry
+
+    @staticmethod
+    def _color_from_input(clr: Optional[Union[List[float], np.ndarray]]):
+        """Modify input color to always be represented by numpy array with values from 0 to 1 """
+        if clr is None:
+            clr = np.random.uniform(0, 1, 3)
+        clr = np.asarray(clr)
+        assert clr.shape == (3,)
+        if np.any(clr > 1) and clr.dtype == np.int:
+            clr = clr.astype(dtype=np.float) / 255
+        clr = clr.clip(0., 1.)
+        return clr
+
+    def _set_vis(self, vis):
+        """Set visualizer. Used internally to create frames of animation."""
+        self._vis = vis[self.name]
+
+    def _assert_vis(self):
+        if self._vis is None:
+            print('The properties of the object cannot be modified unless object is added to the scene.')
+
+    def _set_object(self):
+        """Create an object in meshcat and set all the initial properties. """
+        self._assert_vis()
+        self._vis.set_object(self._geometry, self._material)
+        self._set_transform()
+
+    def _delete_object(self):
+        """Delete an object from meshcat."""
+        self._vis.delete()
+
+    def _set_transform(self):
+        """Update transformation in the meshcat."""
+        self._assert_vis()
+        self._vis.set_transform(self._pose)
+
+    def _set_property(self, key, value, prop_type='number', subpath='<object>'):
+        """Set property of the object, handle animation frames set_property internally."""
+        self._assert_vis()
+        element = self._vis if subpath is None else self._vis[subpath]
+        if isinstance(self._vis, AnimationFrameVisualizer):
+            element.set_property(key, prop_type, value)
+        else:
+            element.set_property(key, value)
+
+    def _is_animation(self):
+        """Return true if rendering to the animation. Used internally to modify the way of assigning properties until
+         PR https://github.com/rdeits/meshcat/pull/137 is merged."""
+        return isinstance(self._vis, AnimationFrameVisualizer)
 
     @property
-    def material(self):
-        if self.texture is not None:
-            return g.MeshLambertMaterial(map=self.texture, opacity=self.opacity)
-        color = np.asarray(self.color).copy()
-        if not (np.any(color > 1) and color.dtype == np.int):
-            color *= 255
+    def _material(self):
+        if self._texture is not None:
+            return g.MeshLambertMaterial(map=self._texture, opacity=self.opacity)
+        color = self.color.copy() * 255
         color = np.clip(color, 0, 255)
         return g.MeshLambertMaterial(color=int(color[0]) * 256 ** 2 + int(color[1]) * 256 + int(color[2]),
                                      opacity=self.opacity)
 
-    def is_material_equal(self, other):
-        return np.all(np.isclose(self.color, other.color)) and self.texture == other.texture and np.isclose(
-            self.opacity, other.opacity)
+    """=== Control of the pose ==="""
+
+    @property
+    def pose(self):
+        return self._pose
+
+    @pose.setter
+    def pose(self, v):
+        self._pose[:, :] = v
 
     @property
     def pos(self):
-        return self.pose[:3, 3]
+        return self._pose[:3, 3]
 
     @pos.setter
     def pos(self, p):
-        self.pose[:3, 3] = p
+        self._pose[:3, 3] = p
 
     @property
     def rot(self):
-        return self.pose[:3, :3]
+        return self._pose[:3, :3]
 
     @rot.setter
     def rot(self, r):
-        self.pose[:3, :3] = r
+        self._pose[:3, :3] = r
+
+    """=== Control of the object visibility ==="""
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, v):
+        self._visible = bool(v)
+        self._set_property('visible', value=self._visible, prop_type='boolean')
+
+    def hide(self):
+        self.visible = False
+
+    def show(self):
+        self.visible = True
+
+    """=== Control of the object transparency ==="""
+
+    @property
+    def opacity(self):
+        return self._opacity
+
+    @opacity.setter
+    def opacity(self, v):
+        self._opacity = v
+        if self._is_animation():
+            self._set_property('material.opacity', value=self._opacity, prop_type='number')
+        else:
+            self._set_object()  # only way how to update opacity online is to reset the object
+
+    @property
+    def color(self):
+        return self._color
+
+    @color.setter
+    def color(self, v):
+        self._color[:] = self._color_from_input(v)
+
+    def _color_reset_on_set_item(self):
+        if self._is_animation():
+            self._set_property('material.color', value=self.color.tolist(), prop_type='vector')
+        else:
+            self._set_object()  # only way how to update color online is to reset the object
+
+    """=== Helper functions to create basic primitives ==="""
 
     @classmethod
     def create_cuboid(cls, lengths: Union[List[float], float], pose=None, color: Optional[List[float]] = None,
@@ -122,3 +228,20 @@ class Object:
             exp_obj = trimesh.exchange.obj.export_obj(mesh, include_texture=False)
         return cls(g.ObjMeshGeometry.from_stream(trimesh.util.wrap_as_stream(exp_obj)), pose=pose, color=color,
                    texture=texture, opacity=opacity, name=name)
+
+
+class ArrayWithCallbackOnSetItem(np.ndarray):
+
+    def __new__(cls, input_array, cb=None):
+        obj = np.asarray(input_array).view(cls)
+        obj.cb = cb
+        return obj
+
+    def __setitem__(self, *args, **kwargs):
+        super().__setitem__(*args, **kwargs)
+        self.cb()
+
+    def __array_finalize__(self, obj, **kwargs):
+        if obj is None:
+            return
+        self.cb = getattr(obj, 'cb', None)
