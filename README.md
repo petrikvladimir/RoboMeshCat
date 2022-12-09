@@ -12,6 +12,10 @@ The library allows you to easily generate videos like this (source code is [here
 
 ![](https://raw.githubusercontent.com/petrikvladimir/robomeshcat/main/docs/output.gif)
 
+or like this (by installing a few more [dependencies](docs/human.md); [source code](examples/05_teaser_with_human.py)):
+
+![](https://raw.githubusercontent.com/petrikvladimir/robomeshcat/main/docs/human_teaser.gif)
+
 # Installation
 
 ## From <img src="https://s3.amazonaws.com/conda-dev/conda_logo.svg" height="18">

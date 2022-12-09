@@ -19,6 +19,7 @@ from robomeshcat import Scene, Human
 
 case_study = 2  # chose which case study to visualize
 scene = Scene()
+"Set smplx_models_path to the directory where are your SMPLX models"
 smplx_models_path = str(Path(__file__).parent.joinpath('models').joinpath('smplx'))
 human_default_pose = pin.exp6(np.array([0, 0, 0, np.pi / 2, 0., 0.])).homogeneous
 human_default_pose[2, 3] = 1.2

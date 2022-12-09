@@ -4,10 +4,9 @@
 # Created on: 2022-12-6
 #     Author: Vladimir Petrik <vladimir.petrik@cvut.cz>
 #
-from pathlib import Path
-from typing import Optional, List, Union
 
 import numpy as np
+from typing import Optional, List
 from meshcat import geometry as g
 
 from . import Object
@@ -16,8 +15,7 @@ from . import Object
 class Human(Object):
 
     def __init__(self, pose=None, color: Optional[List[float]] = None, opacity: float = 1., name: str = None,
-                 use_vertex_colors=False, show_wireframe=False,
-                 **kwargs) -> None:
+                 use_vertex_colors=False, show_wireframe=False, **kwargs) -> None:
         from smplx import SMPLX  # we import SMPLX here on purpose, so that smplx dependencies are optional
         self.smplx_model = SMPLX(**kwargs)
         super().__init__(None, pose, color if not use_vertex_colors else [1, 1, 1], None, opacity, name)

@@ -12,7 +12,6 @@ pip install smplx[all]
 and then downloading the data from [here](https://smpl-x.is.tue.mpg.de/).
 
 ## Usage
-To create an animation we need to know all shapes before animation starts as it relies on mesh morphologies in meshcat.
 
 ```python
 human = Human(pose=human_default_pose, color=[1., 0., 0.], model_path=smplx_models_path)
@@ -28,4 +27,4 @@ human.update_vertices()
 You have two options to color the human mesh: (i) uniform color and (ii) per vertex color.
 Uniform color is default, it can be set with `color` argument of human and changed/animated by `.color` property.
 
-Per vertex color is cannot be animated as it requires to change the geometry internally. 
+Per vertex color cannot be animated as it requires to change the geometry internally. 
