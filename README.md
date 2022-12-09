@@ -72,6 +72,9 @@ scene.reset_camera()  # reset camera such that you can control it with your mous
 For complete examples of object and robot interface see our two examples: [01_object.py](examples/01_objects.py)
 and [02_robots.py](examples/02_robots.py).
 
+It is also possible to visualize human model after installing a few more dependencies, 
+see [installation](docs/human.md) and example [06_human.py](examples/06_human.py).
+
 ## Animation
 
 This library allows you to animate all the properties of the objects and robots (e.g. position, robot configuration,
