@@ -177,8 +177,6 @@ class Scene:
         self.camera_zoom = self._camera_zoom  # this will set the starting value of the property
         if self._camera_pose_modified:
             self.camera_pose = self._camera_pose
-        else:
-            self.reset_camera()
 
     """=== Following functions handle the camera control ==="""
 
