@@ -36,7 +36,7 @@ class Robot:
         :param show_collision_models: weather to show collision model instead of visual model
         :param name: name of the robot used in meshcat tree
         :param color: optional color that overwrites one from the urdf
-        :param opacity: optionalopacity that overwrites one from the urdf
+        :param opacity: optional opacity that overwrites one from the urdf
         """
         super().__init__()
         self.name = f'robot{next(self.id_iterator)}' if name is None else name
