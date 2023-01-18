@@ -17,14 +17,22 @@ from .object import Object, ArrayWithCallbackOnSetItem
 class Robot:
     id_iterator = itertools.count()
 
-    def __init__(self, urdf_path: Union[Path, str], mesh_folder_path: Union[Path, str, List[Path], List[str]] = None,
+    def __init__(self, urdf_path: Union[Path, str] = None,
+                 mesh_folder_path: Union[Path, str, List[Path], List[str]] = None,
+                 pinocchio_model: Optional[pin.Model] = None, pinocchio_data: Optional[pin.Data] = None,
+                 pinocchio_geometry_model: Optional[pin.GeometryModel] = None,
+                 pinocchio_geometry_data: Optional[pin.GeometryData] = None,
                  show_collision_models: bool = False, name: str = None, color: Optional[List[float]] = None,
                  opacity: Optional[float] = None, pose=None) -> None:
         """
-        Create a robot from URDF using pinocchio loader.
+        Create a robot using pinocchio loader, you have to option to create a robot: (i) using URDF or
+        (ii) using pinocchio models and data.
         :param urdf_path: path to the urdf file that contains robot description
         :param mesh_folder_path: either a single path to the directory of meshes or list of paths to meshes directory,
           it's set to directory of urdf_path file by default
+        :param pinocchio_model, pinocchio_data, pinocchio_geometry_model, pinocchio_geometry_data: alternativelly, you
+          can use pinocchio model instead of the urdf_path to construct the robot instance, either urdf_path or
+          pinocchio_{model, data, geometry_model, geometry_data} has to be specified.
         :param show_collision_models: weather to show collision model instead of visual model
         :param name: name of the robot used in meshcat tree
         :param color: optional color that overwrites one from the urdf
@@ -32,9 +40,16 @@ class Robot:
         """
         super().__init__()
         self.name = f'robot{next(self.id_iterator)}' if name is None else name
-        self._model, self._data, self._geom_model, self._geom_data = self._build_model_from_urdf(
-            urdf_path, mesh_folder_path, show_collision_models
-        )
+        pin_not_defined = pinocchio_model is None and pinocchio_data is None and \
+                          pinocchio_geometry_model is None and pinocchio_geometry_data is None
+        assert urdf_path is None or pin_not_defined, 'You need to specify either urdf or pinocchio, not both.'
+        if pin_not_defined:
+            self._model, self._data, self._geom_model, self._geom_data = self._build_model_from_urdf(
+                urdf_path, mesh_folder_path, show_collision_models
+            )
+        else:
+            self._model, self._data = pinocchio_model, pinocchio_data
+            self._geom_model, self._geom_data = pinocchio_geometry_model, pinocchio_geometry_data
 
         """ Adjustable properties """
         self._pose = ArrayWithCallbackOnSetItem(np.eye(4) if pose is None else pose, cb=self._fk)
