@@ -17,13 +17,20 @@ from .object import Object, ArrayWithCallbackOnSetItem
 class Robot:
     id_iterator = itertools.count()
 
-    def __init__(self, urdf_path: Union[Path, str] = None,
-                 mesh_folder_path: Union[Path, str, List[Path], List[str]] = None,
-                 pinocchio_model: Optional[pin.Model] = None, pinocchio_data: Optional[pin.Data] = None,
-                 pinocchio_geometry_model: Optional[pin.GeometryModel] = None,
-                 pinocchio_geometry_data: Optional[pin.GeometryData] = None,
-                 show_collision_models: bool = False, name: str = None, color: Optional[List[float]] = None,
-                 opacity: Optional[float] = None, pose=None) -> None:
+    def __init__(
+        self,
+        urdf_path: Union[Path, str] = None,
+        mesh_folder_path: Union[Path, str, List[Path], List[str]] = None,
+        pinocchio_model: Optional[pin.Model] = None,
+        pinocchio_data: Optional[pin.Data] = None,
+        pinocchio_geometry_model: Optional[pin.GeometryModel] = None,
+        pinocchio_geometry_data: Optional[pin.GeometryData] = None,
+        show_collision_models: bool = False,
+        name: str = None,
+        color: Optional[List[float]] = None,
+        opacity: Optional[float] = None,
+        pose=None,
+    ) -> None:
         """
         Create a robot using pinocchio loader, you have to option to create a robot: (i) using URDF or
         (ii) using pinocchio models and data.
@@ -40,8 +47,12 @@ class Robot:
         """
         super().__init__()
         self.name = f'robot{next(self.id_iterator)}' if name is None else name
-        pin_not_defined = pinocchio_model is None and pinocchio_data is None and \
-                          pinocchio_geometry_model is None and pinocchio_geometry_data is None
+        pin_not_defined = (
+            pinocchio_model is None
+            and pinocchio_data is None
+            and pinocchio_geometry_model is None
+            and pinocchio_geometry_data is None
+        )
         assert urdf_path is None or pin_not_defined, 'You need to specify either urdf or pinocchio, not both.'
         if pin_not_defined:
             self._model, self._data, self._geom_model, self._geom_data = self._build_model_from_urdf(
@@ -63,8 +74,9 @@ class Robot:
         self._init_objects(overwrite_color=color is not None)
 
     @staticmethod
-    def _build_model_from_urdf(urdf_path, mesh_folder_path, show_collision_models) -> Tuple[
-        pin.Model, pin.Data, pin.GeometryModel, pin.GeometryData]:
+    def _build_model_from_urdf(
+        urdf_path, mesh_folder_path, show_collision_models
+    ) -> Tuple[pin.Model, pin.Data, pin.GeometryModel, pin.GeometryData]:
         """Use pinocchio to load models and datas used for the visualizer."""
         if mesh_folder_path is None:
             mesh_folder_path = str(Path(urdf_path).parent)  # by default use the urdf parent directory
@@ -98,7 +110,7 @@ class Robot:
                 color=g.meshColor[:3] if not overwrite_color else self._color,
                 opacity=g.meshColor[3] if self._opacity is None else self._opacity,
                 texture=g.meshTexturePath if g.meshTexturePath else None,
-                pose=(base * f).homogeneous
+                pose=(base * f).homogeneous,
             )
             if g.meshPath == 'BOX':
                 self._objects[kwargs['name']] = Object.create_cuboid(lengths=2 * g.geometry.halfSide, **kwargs)

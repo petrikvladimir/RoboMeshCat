@@ -13,10 +13,18 @@ from . import Object
 
 
 class Human(Object):
-
-    def __init__(self, pose=None, color: Optional[List[float]] = None, opacity: float = 1., name: str = None,
-                 use_vertex_colors=False, show_wireframe=False, **kwargs) -> None:
+    def __init__(
+        self,
+        pose=None,
+        color: Optional[List[float]] = None,
+        opacity: float = 1.0,
+        name: str = None,
+        use_vertex_colors=False,
+        show_wireframe=False,
+        **kwargs,
+    ) -> None:
         from smplx import SMPLX  # we import SMPLX here on purpose, so that smplx dependencies are optional
+
         self.smplx_model = SMPLX(**kwargs)
         super().__init__(None, pose, color if not use_vertex_colors else [1, 1, 1], None, opacity, name)
 
@@ -43,14 +51,17 @@ class Human(Object):
 
     def update_vertices(self, vertices=None, vertices_colors=None, set_object=True):
         if self._is_animation():
-            print('Update vertices of the mesh will recreate the geometry. It cannot be used in animation for '
-                  'which you should use this.add_morph function')
+            print(
+                'Update vertices of the mesh will recreate the geometry. It cannot be used in animation for '
+                'which you should use this.add_morph function'
+            )
             return
         self._geometry = TriangularMeshGeometryWithMorphAttributes(
             vertices=np.asarray(vertices) if vertices is not None else self.get_vertices(),
             faces=self.smplx_model.faces,
             color=np.asarray(vertices_colors) if vertices_colors is not None else self._vertex_colors,
-            morph_positions=[], morph_colors=[],
+            morph_positions=[],
+            morph_colors=[],
         )
         if set_object:
             self._set_object()
@@ -62,7 +73,7 @@ class Human(Object):
             self._geometry.morph_colors.append(np.asarray(vertex_colors))
 
     def display_morph(self, morph_id):
-        """Set morphTargetInfluences to display only the given morph_id. """
+        """Set morphTargetInfluences to display only the given morph_id."""
         self._morph_target_influences = [0] * self._geometry.number_of_morphs()
         if morph_id is not None:
             self._morph_target_influences[morph_id] = 1

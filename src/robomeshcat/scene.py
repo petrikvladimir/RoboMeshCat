@@ -24,7 +24,6 @@ from .robot import Robot
 
 
 class Scene:
-
     def __init__(self, open=True, wait_for_open=True) -> None:
         super().__init__()
         self.objects: Dict[str, Object] = {}
@@ -41,7 +40,7 @@ class Scene:
         self._camera_vis = self.vis["/Cameras/default"]
         self._camera_pose = ArrayWithCallbackOnSetItem(np.eye(4), cb=self._set_camera_transform)
         self._camera_pose_modified = False
-        self._camera_zoom = 1.
+        self._camera_zoom = 1.0
 
         " Variables used internally in case we are rendering to animation "
         self._animation: Optional[Animation] = None
@@ -55,8 +54,10 @@ class Scene:
         if verbose and obj.name in self.objects:
             print('Object with the same name is already inside the scene, it will be replaced. ')
         if verbose and self._animation is not None:
-            print('Adding objects while animating is not allowed. You need to add all objects before starting the '
-                  'animation.')
+            print(
+                'Adding objects while animating is not allowed.'
+                'You need to add all objects before starting the animation.'
+            )
             return
         self.objects[obj.name] = obj
         obj._set_vis(self.vis)
@@ -85,7 +86,7 @@ class Scene:
             self.remove_object(obj, verbose=verbose)
 
     def render(self):
-        """Render current scene either to browser, video or to the next frame of the animation. """
+        """Render current scene either to browser, video or to the next frame of the animation."""
         if self._animation is not None:
             self._reset_all_properties()
             self._next_animation_frame()
@@ -99,7 +100,7 @@ class Scene:
          1) filename parameter if it is not None
          2) directory/timestemp.mp4 if filename is None and directory is not None
          3) /tmp/timestemp if filename is None and directory is None
-         """
+        """
         if filename is None:
             if directory is None:
                 directory = gettempdir()
@@ -114,7 +115,7 @@ class Scene:
         return self.objects[item] if item in self.objects else self.robots[item]
 
     def clear(self):
-        """ Remove all the objects/robots from the scene """
+        """Remove all the objects/robots from the scene"""
         for r in list(self.robots.values()):
             self.remove_robot(r)
         for o in list(self.objects.values()):
@@ -130,13 +131,13 @@ class Scene:
     """=== The following set of functions handle animations ==="""
 
     def animation(self, fps: int = 30):
-        """ Return context of the animation that allow us to record animations.
-            Usage:
-                with scene.animation(fps=30):
-                    scene['obj'].pos = 3. # set properties of a first frame
-                    scene.render() # create a second frame of animation
-                    scene['obj'].pos = 3.
-         """
+        """Return context of the animation that allow us to record animations.
+        Usage:
+            with scene.animation(fps=30):
+                scene['obj'].pos = 3. # set properties of a first frame
+                scene.render() # create a second frame of animation
+                scene['obj'].pos = 3.
+        """
         return AnimationContext(scene=self, fps=fps)
 
     def _next_animation_frame(self):
@@ -217,7 +218,7 @@ class Scene:
         """Reset camera to default pose and let user interact with it again."""
         self._camera_pose = ArrayWithCallbackOnSetItem(np.eye(4), cb=self._set_camera_transform)
         self._camera_vis.set_transform(self._camera_pose)
-        self.camera_zoom = 1.
+        self.camera_zoom = 1.0
         self._camera_enable_user_control()
         self._camera_pose_modified = False
 
@@ -243,7 +244,7 @@ class Scene:
 
 
 class AnimationContext:
-    """ Used to provide 'with animation' capability for the viewer. """
+    """Used to provide 'with animation' capability for the viewer."""
 
     def __init__(self, scene: Scene, fps: int) -> None:
         super().__init__()
@@ -255,14 +256,14 @@ class AnimationContext:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Publish animation and clear all internal changes that were required to render to frame instead of online """
+        """Publish animation and clear all internal changes that were required to render to frame instead of online"""
         self.remove_clips_duplicates()
         self.scene.vis[f'animations/animation'].set_animation(self.scene._animation)
         self.scene._close_animation()
 
     def remove_clips_duplicates(self):
         """Meshcat doesn't like if same property as modified twice in the same frame - it does weird jumping in
-        animation. In this function we find such a duplicates and keep only the last change of the property. """
+        animation. In this function we find such a duplicates and keep only the last change of the property."""
         for clip in self.scene._animation.clips.values():
             for track in clip.tracks.values():
                 indices_to_remove = set()

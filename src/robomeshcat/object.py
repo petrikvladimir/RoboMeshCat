@@ -16,14 +16,20 @@ from meshcat.animation import AnimationFrameVisualizer
 
 
 class Object:
-    """ Represent an object with arbitrary geometry that can be rendered in the meshcat. """
+    """Represent an object with arbitrary geometry that can be rendered in the meshcat."""
 
     id_iterator = itertools.count()
 
-    def __init__(self, geometry=None, pose=None,
-                 color: Optional[List[float]] = None, texture: Optional[Union[g.ImageTexture, Path]] = None,
-                 opacity: float = 1., name: str = None) -> None:
-        """ Create an object with given geometry, pose, color and opacity.
+    def __init__(
+        self,
+        geometry=None,
+        pose=None,
+        color: Optional[List[float]] = None,
+        texture: Optional[Union[g.ImageTexture, Path]] = None,
+        opacity: float = 1.0,
+        name: str = None,
+    ) -> None:
+        """Create an object with given geometry, pose, color and opacity.
         :param geometry
         :param pose - 4x4 pose of the object
         :param color - RGB color of the object either tuple of integers [0-255] or tuple of floats [0. - 1.]
@@ -48,14 +54,14 @@ class Object:
 
     @staticmethod
     def _color_from_input(clr: Optional[Union[List[float], np.ndarray]], default=None):
-        """Modify input color to always be represented by numpy array with values from 0 to 1 """
+        """Modify input color to always be represented by numpy array with values from 0 to 1"""
         if clr is None:
             clr = np.random.uniform(0, 1, 3) if default is None else default
         clr = np.asarray(clr)
         assert clr.shape == (3,)
         if np.any(clr > 1) and clr.dtype == np.int:
             clr = clr.astype(dtype=np.float) / 255
-        clr = clr.clip(0., 1.)
+        clr = clr.clip(0.0, 1.0)
         return clr
 
     def _set_vis(self, vis):
@@ -63,11 +69,12 @@ class Object:
         self._vis = vis[self.name]
 
     def _assert_vis(self):
-        assert self._vis is not None, 'The properties of the object cannot be modified unless object is added to the ' \
-                                      'scene.'
+        assert (
+            self._vis is not None
+        ), 'The properties of the object cannot be modified unless object is added to the scene.'
 
     def _set_object(self):
-        """Create an object in meshcat and set all the initial properties. """
+        """Create an object in meshcat and set all the initial properties."""
         self._assert_vis()
         self._vis.set_object(self._geometry, self._material)
         self._set_transform()
@@ -92,7 +99,7 @@ class Object:
 
     def _is_animation(self):
         """Return true if rendering to the animation. Used internally to modify the way of assigning properties until
-         PR https://github.com/rdeits/meshcat/pull/137 is merged."""
+        PR https://github.com/rdeits/meshcat/pull/137 is merged."""
         return isinstance(self._vis, AnimationFrameVisualizer)
 
     @property
@@ -103,8 +110,9 @@ class Object:
             return g.MeshLambertMaterial(map=self._texture, opacity=self.opacity)
         color = self.color.copy() * 255
         color = np.clip(color, 0, 255)
-        return g.MeshLambertMaterial(color=int(color[0]) * 256 ** 2 + int(color[1]) * 256 + int(color[2]),
-                                     opacity=self.opacity)
+        return g.MeshLambertMaterial(
+            color=int(color[0]) * 256**2 + int(color[1]) * 256 + int(color[2]), opacity=self.opacity
+        )
 
     """=== Control of the pose ==="""
 
@@ -179,7 +187,7 @@ class Object:
 
     def _reset_all_properties(self):
         """Reset all properties in the meshcat, i.e. call setters with the same variable. Useful for the animation
-         frames. """
+        frames."""
         self.pose = self.pose
         self.color = self.color
         self.opacity = self.opacity
@@ -188,47 +196,80 @@ class Object:
     """=== Helper functions to create basic primitives ==="""
 
     @classmethod
-    def create_cuboid(cls, lengths: Union[List[float], float], pose=None, color: Optional[List[float]] = None,
-                      texture: Optional[Union[g.ImageTexture, Path]] = None, opacity: float = 1., name: str = None):
-        """Create cuboid with a given size. """
-        return cls(g.Box(lengths=[lengths] * 3 if isinstance(lengths, (float, int)) else lengths), pose=pose,
-                   color=color, texture=texture, opacity=opacity, name=name)
+    def create_cuboid(
+        cls,
+        lengths: Union[List[float], float],
+        pose=None,
+        color: Optional[List[float]] = None,
+        texture: Optional[Union[g.ImageTexture, Path]] = None,
+        opacity: float = 1.0,
+        name: str = None,
+    ):
+        """Create cuboid with a given size."""
+        box = g.Box(lengths=[lengths] * 3 if isinstance(lengths, (float, int)) else lengths)
+        return cls(box, pose=pose, color=color, texture=texture, opacity=opacity, name=name)
 
     @classmethod
-    def create_sphere(cls, radius: float, pose=None, color: Optional[List[float]] = None,
-                      texture: Optional[Union[g.ImageTexture, Path]] = None, opacity: float = 1., name: str = None):
-        """Create a sphere with a given radius. """
+    def create_sphere(
+        cls,
+        radius: float,
+        pose=None,
+        color: Optional[List[float]] = None,
+        texture: Optional[Union[g.ImageTexture, Path]] = None,
+        opacity: float = 1.0,
+        name: str = None,
+    ):
+        """Create a sphere with a given radius."""
         return cls(g.Sphere(radius=radius), pose=pose, color=color, texture=texture, opacity=opacity, name=name)
 
     @classmethod
-    def create_cylinder(cls, radius: float, length: float, pose=None, color: Optional[List[float]] = None,
-                        texture: Optional[Union[g.ImageTexture, Path]] = None, opacity: float = 1., name: str = None):
+    def create_cylinder(
+        cls,
+        radius: float,
+        length: float,
+        pose=None,
+        color: Optional[List[float]] = None,
+        texture: Optional[Union[g.ImageTexture, Path]] = None,
+        opacity: float = 1.0,
+        name: str = None,
+    ):
         """Create a cylinder with a given radius and length. The axis of rotational symmetry is aligned with the z-axis
         that is common in robotics. To achieve that, we create a mesh of a cylinder instead of using meshcat cylinder
-        that is aligned with y-axis. """
+        that is aligned with y-axis."""
         mesh: trimesh.Trimesh = trimesh.creation.cylinder(radius=radius, height=length, sections=50)
         exp_obj = trimesh.exchange.obj.export_obj(mesh)
-        return cls(g.ObjMeshGeometry.from_stream(trimesh.util.wrap_as_stream(exp_obj)), pose=pose, color=color,
-                   texture=texture, opacity=opacity, name=name)
+        mesh = g.ObjMeshGeometry.from_stream(trimesh.util.wrap_as_stream(exp_obj))
+        return cls(mesh, pose=pose, color=color, texture=texture, opacity=opacity, name=name)
 
     @classmethod
-    def create_mesh(cls, path_to_mesh: Union[str, Path], scale: Union[float, List[float]] = 1., pose=None,
-                    color: Optional[List[float]] = None, texture: Optional[Union[g.ImageTexture, Path]] = None,
-                    opacity: float = 1., name: str = None):
+    def create_mesh(
+        cls,
+        path_to_mesh: Union[str, Path],
+        scale: Union[float, List[float]] = 1.0,
+        pose=None,
+        color: Optional[List[float]] = None,
+        texture: Optional[Union[g.ImageTexture, Path]] = None,
+        opacity: float = 1.0,
+        name: str = None,
+    ):
         """Create a mesh object by loading it from the :param path_to_mesh. Loading is performed by 'trimesh' library
         internally."""
         try:
             mesh: trimesh.Trimesh = trimesh.load(path_to_mesh, force='mesh')
         except ValueError as e:
             if str(e) == 'File type: dae not supported':
-                print('To load DAE meshes you need to install pycollada package via '
-                      '`conda install -c conda-forge pycollada`'
-                      ' or `pip install pycollada`')
+                print(
+                    'To load DAE meshes you need to install pycollada package via '
+                    '`conda install -c conda-forge pycollada`'
+                    ' or `pip install pycollada`'
+                )
             raise
         except Exception as e:
-            print(f'Loading of a mesh failed with message: \'{e}\'. '
-                  f'Trying to load with with \'ignore_broken\' but consider to fix the mesh located here:'
-                  f' \'{path_to_mesh}\'.')
+            print(
+                f'Loading of a mesh failed with message: \'{e}\'. '
+                f'Trying to load with with \'ignore_broken\' but consider to fix the mesh located here:'
+                f' \'{path_to_mesh}\'.'
+            )
             mesh: trimesh.Trimesh = trimesh.load(path_to_mesh, force='mesh', ignore_broken=True)
 
         mesh.apply_scale(scale)
@@ -236,12 +277,11 @@ class Object:
             exp_obj = trimesh.exchange.obj.export_obj(mesh)
         except ValueError:
             exp_obj = trimesh.exchange.obj.export_obj(mesh, include_texture=False)
-        return cls(g.ObjMeshGeometry.from_stream(trimesh.util.wrap_as_stream(exp_obj)), pose=pose, color=color,
-                   texture=texture, opacity=opacity, name=name)
+        mesh = g.ObjMeshGeometry.from_stream(trimesh.util.wrap_as_stream(exp_obj))
+        return cls(mesh, pose=pose, color=color, texture=texture, opacity=opacity, name=name)
 
 
 class ArrayWithCallbackOnSetItem(np.ndarray):
-
     def __new__(cls, input_array, cb=None):
         obj = np.asarray(input_array).view(cls)
         obj.cb = cb
