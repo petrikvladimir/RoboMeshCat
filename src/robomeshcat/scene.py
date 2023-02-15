@@ -13,7 +13,6 @@ from tempfile import gettempdir
 import imageio
 import numpy as np
 from PIL import Image
-from copy import deepcopy
 from typing import Dict, Optional
 
 import meshcat
@@ -258,7 +257,7 @@ class AnimationContext:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Publish animation and clear all internal changes that were required to render to frame instead of online"""
         self.remove_clips_duplicates()
-        self.scene.vis[f'animations/animation'].set_animation(self.scene._animation)
+        self.scene.vis['animations/animation'].set_animation(self.scene._animation)
         self.scene._close_animation()
 
     def remove_clips_duplicates(self):

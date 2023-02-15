@@ -117,8 +117,8 @@ class Robot:
             elif g.meshPath == 'SPHERE':
                 self._objects[kwargs['name']] = Object.create_sphere(radius=g.geometry.radius, **kwargs)
             elif g.meshPath == 'CYLINDER':
-                r, l = g.geometry.radius, 2 * g.geometry.halfLength
-                self._objects[kwargs['name']] = Object.create_cylinder(radius=r, length=l, **kwargs)
+                radius, length = g.geometry.radius, 2 * g.geometry.halfLength
+                self._objects[kwargs['name']] = Object.create_cylinder(radius=radius, length=length, **kwargs)
             else:
                 self._objects[kwargs['name']] = Object.create_mesh(path_to_mesh=g.meshPath, scale=g.meshScale, **kwargs)
 
