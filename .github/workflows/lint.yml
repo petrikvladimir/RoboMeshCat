@@ -28,10 +28,13 @@ jobs:
         with:
           options: "--check --diff --verbose --skip-string-normalization --line-length=120"
           src: "src/"
+
   pytype-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: theahura/pytypes-action@main
+      - uses: actions/setup-python@v4
         with:
-          args: -d import-error
+          python-version: "3.8"
+      - run: pip install pytype
+      - run: pytype -d import-error src/
