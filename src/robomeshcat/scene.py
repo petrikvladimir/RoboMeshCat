@@ -4,6 +4,7 @@
 # Created on: 2022-10-11
 #     Author: Vladimir Petrik <vladimir.petrik@cvut.cz>
 #
+from __future__ import annotations
 
 import itertools
 import time
@@ -12,8 +13,7 @@ from tempfile import gettempdir
 
 import imageio
 import numpy as np
-from PIL import Image
-from typing import Dict, Optional
+from PIL.Image import Image
 
 import meshcat
 from meshcat.animation import Animation, AnimationFrameVisualizer
@@ -23,10 +23,10 @@ from .robot import Robot
 
 
 class Scene:
-    def __init__(self, open=True, wait_for_open=True) -> None:
+    def __init__(self, open: bool = True, wait_for_open: bool = True) -> None:
         super().__init__()
-        self.objects: Dict[str, Object] = {}
-        self.robots: Dict[str, Robot] = {}
+        self.objects: dict[str, Object] = {}
+        self.robots: dict[str, Robot] = {}
 
         self.vis = meshcat.Visualizer()
         if open:
@@ -42,9 +42,9 @@ class Scene:
         self._camera_zoom = 1.0
 
         " Variables used internally in case we are rendering to animation "
-        self._animation: Optional[Animation] = None
-        self._animation_frame: Optional[AnimationFrameVisualizer] = None
-        self._animation_frame_counter: Optional[itertools.count] = None
+        self._animation: Animation | None = None
+        self._animation_frame: AnimationFrameVisualizer | None = None
+        self._animation_frame_counter: itertools.count | None = None
 
         " Variables used internally to write frames of the video "
         self._video_writer = None
@@ -93,7 +93,9 @@ class Scene:
             self._video_writer.append_data(np.array(self.render_image()))
 
     #
-    def video_recording(self, filename=None, fps=30, directory=None, **kwargs):
+    def video_recording(
+        self, filename: Path | str | None = None, fps: int = 30, directory: Path | str | None = None, **kwargs
+    ):
         """Return a context manager for video recording.
         The output filename is given by:
          1) filename parameter if it is not None
@@ -106,7 +108,6 @@ class Scene:
             filename = Path(directory).joinpath(time.strftime("%Y%m%d_%H%M%S.mp4"))
         return VideoContext(scene=self, fps=fps, filename=filename, **kwargs)
 
-    #
     def render_image(self) -> Image:
         return self.vis.get_image()
 
@@ -277,7 +278,7 @@ class AnimationContext:
 
 
 class VideoContext:
-    def __init__(self, scene: Scene, fps: int, filename: str, **kwargs) -> None:
+    def __init__(self, scene: Scene, fps: int, filename: str | Path, **kwargs) -> None:
         super().__init__()
         self.scene = scene
         self.video_writer = imageio.get_writer(uri=filename, fps=fps, **kwargs)

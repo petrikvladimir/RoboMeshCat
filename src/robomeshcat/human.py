@@ -4,9 +4,9 @@
 # Created on: 2022-12-6
 #     Author: Vladimir Petrik <vladimir.petrik@cvut.cz>
 #
+from __future__ import annotations
 
 import numpy as np
-from typing import Optional, List
 from meshcat import geometry as g
 
 from . import Object
@@ -16,11 +16,11 @@ class Human(Object):
     def __init__(
         self,
         pose=None,
-        color: Optional[List[float]] = None,
+        color: list[float] | None = None,
         opacity: float = 1.0,
-        name: str = None,
-        use_vertex_colors=False,
-        show_wireframe=False,
+        name: str | None = None,
+        use_vertex_colors: bool = False,
+        show_wireframe: bool = False,
         **kwargs,
     ) -> None:
         from smplx import SMPLX  # we import SMPLX here on purpose, so that smplx dependencies are optional

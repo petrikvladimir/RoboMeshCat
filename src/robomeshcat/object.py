@@ -5,10 +5,10 @@
 #     Author: Vladimir Petrik <vladimir.petrik@cvut.cz>
 #
 
+from __future__ import annotations
 
 import itertools
 from pathlib import Path
-from typing import List, Optional, Union
 import trimesh
 import numpy as np
 import meshcat.geometry as g
@@ -24,10 +24,10 @@ class Object:
         self,
         geometry=None,
         pose=None,
-        color: Optional[List[float]] = None,
-        texture: Optional[Union[g.ImageTexture, Path]] = None,
+        color: list[float] | None = None,
+        texture: g.ImageTexture | Path | None = None,
         opacity: float = 1.0,
-        name: str = None,
+        name: str | None = None,
     ) -> None:
         """Create an object with given geometry, pose, color and opacity.
         :param geometry
@@ -53,7 +53,7 @@ class Object:
         self._geometry = geometry
 
     @staticmethod
-    def _color_from_input(clr: Optional[Union[List[float], np.ndarray]], default=None):
+    def _color_from_input(clr: list[float] | np.ndarray | None, default=None):
         """Modify input color to always be represented by numpy array with values from 0 to 1"""
         if clr is None:
             clr = np.random.uniform(0, 1, 3) if default is None else default
@@ -198,12 +198,12 @@ class Object:
     @classmethod
     def create_cuboid(
         cls,
-        lengths: Union[List[float], float],
+        lengths: list[float] | float,
         pose=None,
-        color: Optional[List[float]] = None,
-        texture: Optional[Union[g.ImageTexture, Path]] = None,
+        color: list[float] | None = None,
+        texture: g.ImageTexture | Path | None = None,
         opacity: float = 1.0,
-        name: str = None,
+        name: str | None = None,
     ):
         """Create cuboid with a given size."""
         box = g.Box(lengths=[lengths] * 3 if isinstance(lengths, (float, int)) else lengths)
@@ -214,10 +214,10 @@ class Object:
         cls,
         radius: float,
         pose=None,
-        color: Optional[List[float]] = None,
-        texture: Optional[Union[g.ImageTexture, Path]] = None,
+        color: list[float] | None = None,
+        texture: g.ImageTexture | Path | None = None,
         opacity: float = 1.0,
-        name: str = None,
+        name: str | None = None,
     ):
         """Create a sphere with a given radius."""
         return cls(g.Sphere(radius=radius), pose=pose, color=color, texture=texture, opacity=opacity, name=name)
@@ -228,10 +228,10 @@ class Object:
         radius: float,
         length: float,
         pose=None,
-        color: Optional[List[float]] = None,
-        texture: Optional[Union[g.ImageTexture, Path]] = None,
+        color: list[float] | None = None,
+        texture: g.ImageTexture | Path | None = None,
         opacity: float = 1.0,
-        name: str = None,
+        name: str | None = None,
     ):
         """Create a cylinder with a given radius and length. The axis of rotational symmetry is aligned with the z-axis
         that is common in robotics. To achieve that, we create a mesh of a cylinder instead of using meshcat cylinder
@@ -244,13 +244,13 @@ class Object:
     @classmethod
     def create_mesh(
         cls,
-        path_to_mesh: Union[str, Path],
-        scale: Union[float, List[float]] = 1.0,
+        path_to_mesh: str | Path,
+        scale: float | list[float] = 1.0,
         pose=None,
-        color: Optional[List[float]] = None,
-        texture: Optional[Union[g.ImageTexture, Path]] = None,
+        color: list[float] | None = None,
+        texture: g.ImageTexture | Path | None = None,
         opacity: float = 1.0,
-        name: str = None,
+        name: str | None = None,
     ):
         """Create a mesh object by loading it from the :param path_to_mesh. Loading is performed by 'trimesh' library
         internally."""
