@@ -1,9 +1,9 @@
-name: Static_code_analysis
+name: static_code_analysis
 
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
 
 jobs:
