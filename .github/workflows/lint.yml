@@ -1,4 +1,4 @@
-name: Pylint
+name: Static_code_analysis
 
 on:
   push:
