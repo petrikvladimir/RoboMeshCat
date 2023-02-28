@@ -4,9 +4,10 @@
 # Created on: 2022-10-13
 #     Author: Vladimir Petrik <vladimir.petrik@cvut.cz>
 #
+from __future__ import annotations
+
 import itertools
 from pathlib import Path
-from typing import Union, Dict, Optional, List, Tuple
 
 import numpy as np
 import pinocchio as pin
@@ -17,13 +18,20 @@ from .object import Object, ArrayWithCallbackOnSetItem
 class Robot:
     id_iterator = itertools.count()
 
-    def __init__(self, urdf_path: Union[Path, str] = None,
-                 mesh_folder_path: Union[Path, str, List[Path], List[str]] = None,
-                 pinocchio_model: Optional[pin.Model] = None, pinocchio_data: Optional[pin.Data] = None,
-                 pinocchio_geometry_model: Optional[pin.GeometryModel] = None,
-                 pinocchio_geometry_data: Optional[pin.GeometryData] = None,
-                 show_collision_models: bool = False, name: str = None, color: Optional[List[float]] = None,
-                 opacity: Optional[float] = None, pose=None) -> None:
+    def __init__(
+        self,
+        urdf_path: Path | str | None = None,
+        mesh_folder_path: Path | str | list[Path] | list[str] | None = None,
+        pinocchio_model: pin.Model | None = None,
+        pinocchio_data: pin.Data | None = None,
+        pinocchio_geometry_model: pin.GeometryModel | None = None,
+        pinocchio_geometry_data: pin.GeometryData | None = None,
+        show_collision_models: bool = False,
+        name: str | None = None,
+        color: list[float] | None = None,
+        opacity: float | None = None,
+        pose=None,
+    ) -> None:
         """
         Create a robot using pinocchio loader, you have to option to create a robot: (i) using URDF or
         (ii) using pinocchio models and data.
@@ -40,8 +48,12 @@ class Robot:
         """
         super().__init__()
         self.name = f'robot{next(self.id_iterator)}' if name is None else name
-        pin_not_defined = pinocchio_model is None and pinocchio_data is None and \
-                          pinocchio_geometry_model is None and pinocchio_geometry_data is None
+        pin_not_defined = (
+            pinocchio_model is None
+            and pinocchio_data is None
+            and pinocchio_geometry_model is None
+            and pinocchio_geometry_data is None
+        )
         assert urdf_path is None or pin_not_defined, 'You need to specify either urdf or pinocchio, not both.'
         if pin_not_defined:
             self._model, self._data, self._geom_model, self._geom_data = self._build_model_from_urdf(
@@ -59,12 +71,13 @@ class Robot:
         self._visible = True
 
         """Set of objects used to visualize the links."""
-        self._objects: Dict[str, Object] = {}
+        self._objects: dict[str, Object] = {}
         self._init_objects(overwrite_color=color is not None)
 
     @staticmethod
-    def _build_model_from_urdf(urdf_path, mesh_folder_path, show_collision_models) -> Tuple[
-        pin.Model, pin.Data, pin.GeometryModel, pin.GeometryData]:
+    def _build_model_from_urdf(
+        urdf_path, mesh_folder_path, show_collision_models
+    ) -> tuple[pin.Model, pin.Data, pin.GeometryModel, pin.GeometryData]:
         """Use pinocchio to load models and datas used for the visualizer."""
         if mesh_folder_path is None:
             mesh_folder_path = str(Path(urdf_path).parent)  # by default use the urdf parent directory
@@ -84,7 +97,7 @@ class Robot:
         pin.forwardKinematics(self._model, self._data, self._q)
         pin.updateGeometryPlacements(self._model, self._data, self._geom_model, self._geom_data)
         base = pin.SE3(self._pose)
-        for g, f in zip(self._geom_model.geometryObjects, self._geom_data.oMg):  # type: pin.GeometryObject, pin.SE3
+        for g, f in zip(self._geom_model.geometryObjects, self._geom_data.oMg):
             self._objects[f'{self.name}/{g.name}'].pose = (base * f).homogeneous
 
     def _init_objects(self, overwrite_color=False):
@@ -92,21 +105,21 @@ class Robot:
         pin.forwardKinematics(self._model, self._data, self._q)
         pin.updateGeometryPlacements(self._model, self._data, self._geom_model, self._geom_data)
         base = pin.SE3(self._pose)
-        for g, f in zip(self._geom_model.geometryObjects, self._geom_data.oMg):  # type: pin.GeometryObject, pin.SE3
+        for g, f in zip(self._geom_model.geometryObjects, self._geom_data.oMg):
             kwargs = dict(
                 name=f'{self.name}/{g.name}',
                 color=g.meshColor[:3] if not overwrite_color else self._color,
                 opacity=g.meshColor[3] if self._opacity is None else self._opacity,
                 texture=g.meshTexturePath if g.meshTexturePath else None,
-                pose=(base * f).homogeneous
+                pose=(base * f).homogeneous,
             )
             if g.meshPath == 'BOX':
                 self._objects[kwargs['name']] = Object.create_cuboid(lengths=2 * g.geometry.halfSide, **kwargs)
             elif g.meshPath == 'SPHERE':
                 self._objects[kwargs['name']] = Object.create_sphere(radius=g.geometry.radius, **kwargs)
             elif g.meshPath == 'CYLINDER':
-                r, l = g.geometry.radius, 2 * g.geometry.halfLength
-                self._objects[kwargs['name']] = Object.create_cylinder(radius=r, length=l, **kwargs)
+                radius, length = g.geometry.radius, 2 * g.geometry.halfLength
+                self._objects[kwargs['name']] = Object.create_cylinder(radius=radius, length=length, **kwargs)
             else:
                 self._objects[kwargs['name']] = Object.create_mesh(path_to_mesh=g.meshPath, scale=g.meshScale, **kwargs)
 
