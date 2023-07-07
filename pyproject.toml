@@ -14,7 +14,10 @@ authors = [
 description = "RoboMeshCat - Set of utilities for visualizing robots in web-based visualizer MeshCat."
 readme = "README.md"
 requires-python = ">=3.7" # we use future annotations supported from 3.7
-dependencies = ["pin", "meshcat", "trimesh", "imageio", "imageio-ffmpeg"]
+dependencies = [
+    "pin", "trimesh", "imageio", "imageio-ffmpeg",
+    "meshcat @ git+https://github.com/rdeits/meshcat-python",
+]
 classifiers = [
     "Topic :: Scientific/Engineering :: Visualization",
     "Framework :: Robot Framework",

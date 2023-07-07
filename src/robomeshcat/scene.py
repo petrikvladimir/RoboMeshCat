@@ -38,6 +38,7 @@ class Scene:
         "Variables used to control the camera"
         self._camera_vis = self.vis["/Cameras/default"]
         self._camera_pose = ArrayWithCallbackOnSetItem(np.eye(4), cb=self._set_camera_transform)
+        self._camera_target_pos = ArrayWithCallbackOnSetItem(np.zeros(3), cb=self._set_camera_target_pos)
         self._camera_pose_modified = False
         self._camera_zoom = 1.0
 
@@ -214,9 +215,18 @@ class Scene:
     def camera_rot(self, r):
         self._camera_pose[:3, :3] = r
 
+    @property
+    def camera_target_pos(self):
+        return self._camera_target_pos
+
+    @camera_target_pos.setter
+    def camera_target_pos(self, value):
+        self._camera_target_pos[:] = value
+
     def reset_camera(self):
         """Reset camera to default pose and let user interact with it again."""
         self._camera_pose = ArrayWithCallbackOnSetItem(np.eye(4), cb=self._set_camera_transform)
+        self._camera_target_pos[:] = 0
         self._camera_vis.set_transform(self._camera_pose)
         self.camera_zoom = 1.0
         self._camera_enable_user_control()
@@ -227,6 +237,9 @@ class Scene:
         self._camera_vis.set_transform(self._camera_pose)
         self._camera_disable_user_control()
         self._camera_pose_modified = True
+
+    def _set_camera_target_pos(self):
+        self.vis.set_cam_target(self._camera_target_pos)
 
     def _camera_disable_user_control(self):
         self._set_property(self._camera_vis['rotated/<object>'], 'position', [0, 0, 0], 'vector')
