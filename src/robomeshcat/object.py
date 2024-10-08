@@ -11,6 +11,8 @@ import itertools
 from pathlib import Path
 import trimesh
 import numpy as np
+from PIL import Image
+import io
 import meshcat.geometry as g
 from meshcat.animation import AnimationFrameVisualizer
 
@@ -278,6 +280,27 @@ class Object:
         except ValueError:
             exp_obj = trimesh.exchange.obj.export_obj(mesh, include_texture=False)
         mesh = g.ObjMeshGeometry.from_stream(trimesh.util.wrap_as_stream(exp_obj))
+
+        try: # try to get texture from the mesh
+            if hasattr(mesh, 'visual') and hasattr(mesh.visual, 'material') and texture is None:
+                n = 100
+                def xy_to_uv(xy, w=n, h=n):
+                    u = xy[..., 0] / (w - 1)
+                    v = 1 - xy[..., 1] / (h - 1)
+                    return np.stack((u, v), axis=-1)
+                X, Y = np.meshgrid(np.arange(n), np.arange(n))
+                uv = xy_to_uv(np.stack((X, Y), axis=-1))
+                data = mesh.visual.material.to_color(uv.reshape(-1, 2))
+                if data.shape == (4,):
+                    data = np.tile(data, n * n).reshape(n, n, 4)
+                else:
+                    data = data.reshape(n, n, 4)
+                b = io.BytesIO()
+                Image.fromarray(data).save(b, 'png')
+                texture = g.ImageTexture(g.PngImage(b.getvalue()))
+        except:
+            pass
+
         return cls(mesh, pose=pose, color=color, texture=texture, opacity=opacity, name=name)
 
 
