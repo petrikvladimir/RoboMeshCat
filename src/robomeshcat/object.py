@@ -275,11 +275,6 @@ class Object:
             mesh: trimesh.Trimesh = trimesh.load(path_to_mesh, force='mesh', ignore_broken=True)
 
         mesh.apply_scale(scale)
-        try:
-            exp_obj = trimesh.exchange.obj.export_obj(mesh)
-        except ValueError:
-            exp_obj = trimesh.exchange.obj.export_obj(mesh, include_texture=False)
-        mesh = g.ObjMeshGeometry.from_stream(trimesh.util.wrap_as_stream(exp_obj))
 
         try: # try to get texture from the mesh
             if hasattr(mesh, 'visual') and hasattr(mesh.visual, 'material') and texture is None:
@@ -301,7 +296,13 @@ class Object:
         except:
             pass
 
-        return cls(mesh, pose=pose, color=color, texture=texture, opacity=opacity, name=name)
+        try:
+            exp_obj = trimesh.exchange.obj.export_obj(mesh)
+        except ValueError:
+            exp_obj = trimesh.exchange.obj.export_obj(mesh, include_texture=False)
+
+        return cls(g.ObjMeshGeometry.from_stream(trimesh.util.wrap_as_stream(exp_obj)),
+                   pose=pose, color=color, texture=texture, opacity=opacity, name=name)
 
 
 class ArrayWithCallbackOnSetItem(np.ndarray):
