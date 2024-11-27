@@ -149,13 +149,23 @@ class Robot:
     def rot(self, r):
         self._pose[:3, :3] = r
 
+    def _get_joint_id(self, key: str | int):
+        """Get the joint id either from joint name or integer. The universe joint is
+        not counted as we assume it is fixed."""
+        if isinstance(key, int):
+            return key
+        jid = self._model.getJointId(key)
+        # there is often universe joint that is not counted, so we need to adjust the
+        # index
+        if len(self._model.names) == len(self._q) + 1:
+            jid -= 1
+        return jid
+
     def __getitem__(self, key):
-        jid = self._model.getJointId(key) if isinstance(key, str) else key
-        return self._q[jid]
+        return self._q[self._get_joint_id(key)]
 
     def __setitem__(self, key, value):
-        jid = self._model.getJointId(key) if isinstance(key, str) else key
-        self._q[jid] = value
+        self._q[self._get_joint_id(key)] = value
 
     """=== Control of the object visibility ==="""
 

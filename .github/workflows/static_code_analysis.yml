@@ -38,3 +38,14 @@ jobs:
           python-version: "3.10"
       - run: pip install pytype>=2023.2.14
       - run: pytype -d import-error src/
+
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - run: pip install pytest
+      - run: pip install -e .
+      - run: pytest tests
