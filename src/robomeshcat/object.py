@@ -276,13 +276,15 @@ class Object:
 
         mesh.apply_scale(scale)
 
-        try: # try to get texture from the mesh
+        try:  # try to get texture from the mesh
             if hasattr(mesh, 'visual') and hasattr(mesh.visual, 'material') and texture is None:
                 n = 100
+
                 def xy_to_uv(xy, w=n, h=n):
                     u = xy[..., 0] / (w - 1)
                     v = 1 - xy[..., 1] / (h - 1)
                     return np.stack((u, v), axis=-1)
+
                 X, Y = np.meshgrid(np.arange(n), np.arange(n))
                 uv = xy_to_uv(np.stack((X, Y), axis=-1))
                 data = mesh.visual.material.to_color(uv.reshape(-1, 2))
@@ -293,7 +295,7 @@ class Object:
                 b = io.BytesIO()
                 Image.fromarray(data).save(b, 'png')
                 texture = g.ImageTexture(g.PngImage(b.getvalue()))
-        except:
+        except Exception:
             pass
 
         try:
@@ -301,8 +303,14 @@ class Object:
         except ValueError:
             exp_obj = trimesh.exchange.obj.export_obj(mesh, include_texture=False)
 
-        return cls(g.ObjMeshGeometry.from_stream(trimesh.util.wrap_as_stream(exp_obj)),
-                   pose=pose, color=color, texture=texture, opacity=opacity, name=name)
+        return cls(
+            g.ObjMeshGeometry.from_stream(trimesh.util.wrap_as_stream(exp_obj)),
+            pose=pose,
+            color=color,
+            texture=texture,
+            opacity=opacity,
+            name=name,
+        )
 
 
 class ArrayWithCallbackOnSetItem(np.ndarray):
