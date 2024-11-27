@@ -15,8 +15,8 @@ class TestRobot(unittest.TestCase):
         robot = Robot(urdf_path=Path(__file__).parent / 'test_urdf.urdf')
 
         robot["shoulder_pan_joint"] = 0.1
-        self.assertAlmostEquals(robot["shoulder_pan_joint"], 0.1)
-        self.assertAlmostEquals(robot[0], 0.1)
+        self.assertAlmostEqual(robot["shoulder_pan_joint"], 0.1)
+        self.assertAlmostEqual(robot[0], 0.1)
 
 
 if __name__ == '__main__':
