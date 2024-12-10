@@ -159,6 +159,8 @@ class Robot:
         # index
         if len(self._model.names) == len(self._q) + 1:
             jid -= 1
+        if jid == self._model.nq:
+            raise KeyError(f'Joint {key} not found.')
         return jid
 
     def __getitem__(self, key):

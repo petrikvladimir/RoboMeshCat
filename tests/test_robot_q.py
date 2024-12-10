@@ -18,6 +18,10 @@ class TestRobot(unittest.TestCase):
         self.assertAlmostEqual(robot["shoulder_pan_joint"], 0.1)
         self.assertAlmostEqual(robot[0], 0.1)
 
+    def test_q_by_name_wrong_key(self):
+        robot = Robot(urdf_path=Path(__file__).parent / 'test_urdf.urdf')
+        self.assertRaises(KeyError, lambda: robot["wrong_key"])
+
 
 if __name__ == '__main__':
     unittest.main()
