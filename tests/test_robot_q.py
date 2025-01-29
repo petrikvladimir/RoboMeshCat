@@ -22,6 +22,11 @@ class TestRobot(unittest.TestCase):
         robot = Robot(urdf_path=Path(__file__).parent / 'test_urdf.urdf')
         self.assertRaises(KeyError, lambda: robot["wrong_key"])
 
+    def test_q_by_multiindex(self):
+        robot = Robot(urdf_path=Path(__file__).parent / 'test_urdf.urdf')
+        robot[:] = 0.1
+        self.assertAlmostEquals(robot["shoulder_pan_joint"], 0.1)
+
 
 if __name__ == '__main__':
     unittest.main()

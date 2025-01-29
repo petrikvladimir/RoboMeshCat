@@ -152,7 +152,7 @@ class Robot:
     def _get_joint_id(self, key: str | int):
         """Get the joint id either from joint name or integer. The universe joint is
         not counted as we assume it is fixed."""
-        if isinstance(key, int):
+        if not isinstance(key, str):
             return key
         jid = self._model.getJointId(key)
         # there is often universe joint that is not counted, so we need to adjust the
